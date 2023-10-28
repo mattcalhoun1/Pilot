@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+
+#kde swap file
+*.kate-swp
+
 # C extensions
 *.so
 
