@@ -1,5 +1,6 @@
 {
 	"Vehicle":"MecCar",
+    "Platform":"Pi CM4",
 	"NavServiceUrls":["http://localhost:8000","http://10.0.0.122:8000"],
 	"LidarEnabledPositioning":true,
 	"LidarEnabledSearch":true,
@@ -8,9 +9,9 @@
 	"Altitude":10.5,
 	"XXX_Desk_Altitude":35.0,
 	"CacheLocations" : {
-		"Maps":"pilot/test/resources/",
-		"Models":"pilot/test/resources/",
-		"Images":"pilot/test/resources/"
+		"Maps":"pilot/test/resources/maps",
+		"Models":"pilot/test/resources/models",
+		"Images":"pilot/test/resources/images"
 	},
 	"Cameras": {
 		"Right":{

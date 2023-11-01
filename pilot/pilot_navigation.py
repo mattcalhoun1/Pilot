@@ -45,7 +45,7 @@ class PilotNavigation:
         self.__max_location_attempts = 2 # how many times to try retrieve location before skipping
         self.__min_location_success = 3 # how many locations to receive before considering the coordinates valid
         self.__min_location_confidence = Confidence.CONFIDENCE_LOW # minimum location confidence before it can be considered valid
-        self.__min_object_confidence = 0.25
+        self.__min_object_confidence = 0.25 if 'MinObjectConfidence' not in self.__config else self.__config['MinObjectConfidence']
         
         self.__save_images = True
         self.__newest_images = {} # one per camera, these are just hte image locations
@@ -194,7 +194,7 @@ class PilotNavigation:
                 c_located_objects = None
                 for locate_cycle in range(3):
                     c_located_objects = self.__locator.find_objects_on_camera(camera=self.__get_camera(c), min_confidence = self.__min_object_confidence)
-                    logging.getLogger(__name__).debug(f"Camera {c} found {len(c_located_objects)} objects: {c_located_objects}")
+                    logging.getLogger(__name__).info(f"Camera {c} found {len(c_located_objects)} objects: {c_located_objects}")
                     located_landmarks[c] = {}
                     for f in self.__finders[c]:
                         f_located = f.locate_landmarks(object_locations=c_located_objects)
@@ -320,16 +320,17 @@ class PilotNavigation:
                 for c in landmarks:
                     camera_heading = self.get_camera_heading(c)
                     newly_found_landmarks = {}
-                    #logging.getLogger(__name__).info(format_landmarks_for_position(landmarks))
+                    #logging.getLogger(__name__).info(self.__format_landmarks_for_position(landmarks, camera_heading))
                     for lid in landmarks[c]:
                         if lid not in unique_landmark_ids:
                             unique_landmark_ids.append(lid)
                             l = landmarks[c][lid]
-                            logging.getLogger(__name__).debug(f"Cam {c} (@{camera_heading}) Located: {lid} @ {l['x1'],l['y1']} - {l['x2'],l['y2']}")
+                            logging.getLogger(__name__).info(f"Cam {c} (@{camera_heading}) Located: {lid} @ {l['x1'],l['y1']} - {l['x2'],l['y2']}")
                             newly_found_landmarks[lid] = l
                         
                     if len(newly_found_landmarks) > 0:
                         combined_landmarks = combined_landmarks + self.__format_landmarks_for_position(located_objects=newly_found_landmarks,camera_heading=camera_heading)
+                        logging.getLogger(__name__).info(f"Combined {combined_landmarks}")
                 
                 # if we prefer to have more and there are repositions left, do that now
                 if len(unique_landmark_ids) < preferred_num_landmarks and num_repositions_used < num_repositions_allowed:
@@ -418,7 +419,9 @@ class PilotNavigation:
             # if we were given a lidar map and told not to use it, null the reference
             lidar_map = None
 
+        #logging.getLogger(__name__).info(f"*** Unfiltered Landmarks: {combined_landmarks}")
         filtered_landmarks = self.__select_top_landmarks (combined_landmarks, max_landmarks = 3)
+        #logging.getLogger(__name__).info(f"*** Filtered Landmarks: {filtered_landmarks}")
 
         x, y, heading, confidence = self.__position_est[[*self.__position_est.keys()][0]].get_coords_and_heading(
             located_objects=filtered_landmarks,

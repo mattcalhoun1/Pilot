@@ -1,0 +1,174 @@
+{
+  "landmarks": {
+    "w_windmill": {
+      "pattern": "na",
+      "type": "windmill",
+      "model": "basement",
+      "x": -133,
+      "y": 0,
+      "height": 12.0,
+      "altitude": 6.0,
+      "confidence": 0.6,
+      "lidar_visible": true,
+      "priority": 6
+    },
+    "ne_tree": {
+      "pattern": "na",
+      "type": "cat_tree",
+      "model": "basement",
+      "x": 100,
+      "y": 108,
+      "height": 24,
+      "altitude": 12,
+      "confidence": 0.6,
+      "lidar_visible": true,
+      "priority": 7
+    },
+    "se_pineapple": {
+      "pattern": "na",
+      "type": "pineapple",
+      "model": "basement",
+      "x": 100,
+      "y": -78,
+      "height": 14.0,
+      "altitude": 7.0,
+      "confidence": 0.6,
+      "lidar_visible": true,
+      "priority": 2
+    },
+    "nw_house": {
+      "pattern": "na",
+      "type": "house",
+      "model": "basement",
+      "x": -67,
+      "y": 69,
+      "height": 7,
+      "altitude": 3.875,
+      "confidence": 0.6,
+      "lidar_visible": false,
+      "priority": 1
+    },
+    "sw_light": {
+      "pattern": "8",
+      "type": "light",
+      "model": "lights",
+      "x": -136,
+      "y": -80,
+      "height": 43,
+      "altitude": 39,
+      "confidence": 0.25,
+      "lidar_visible": true,
+      "priority": 8
+    },
+    "nw_light": {
+      "pattern": "2",
+      "type": "light",
+      "model": "lights",
+      "x": -155,
+      "y": 159,
+      "height": 25,
+      "altitude": 34.5,
+      "confidence": 0.25,
+      "lidar_visible": true,
+      "priority": 9
+    },
+    "n_light": {
+      "pattern": "3",
+      "type": "light",
+      "model": "lights",
+      "x": -65,
+      "y": 287,
+      "height": 33,
+      "altitude": 50.5,
+      "confidence": 0.25,
+      "lidar_visible": true,
+      "priority": 10
+    }
+  },
+  "shape": "rectangle",
+  "boundaries": {
+    "xmin": -150,
+    "ymin": -50,
+    "xmax": 150,
+    "ymax": 250
+  },
+  "near_boundaries": {
+    "xmin": -170,
+    "ymin": -100,
+    "xmax": 170,
+    "ymax": 270
+  },
+  "obstacles": {
+    "christmas_tree": {
+      "xmin": 110,
+      "ymin": -17,
+      "xmax": 150,
+      "ymax": 25
+    },
+    "old_stereo": {
+      "xmin": 136,
+      "ymin": 25,
+      "xmax": 150,
+      "ymax": 180
+    },
+    "pool_table": {
+      "xmin": 16,
+      "ymin": 180,
+      "xmax": 150,
+      "ymax": 250
+    },
+    "work_area": {
+      "xmin": -150,
+      "ymin": -50,
+      "xmax": -130,
+      "ymax": 135
+    },
+    "fp_house": {
+      "xmin": -74,
+      "ymin": 65,
+      "xmax": -64,
+      "ymax": 74
+    },
+    "fp_tree": {
+      "xmin": 90,
+      "ymin": 99,
+      "xmax": 107,
+      "ymax": 116
+    },
+    "post_center": {
+      "xmin": -3,
+      "ymin": -3,
+      "xmax": 3,
+      "ymax": 3
+    },
+    "post_north": {
+      "xmin": -3,
+      "ymin": 143,
+      "xmax": 3,
+      "ymax": 150
+    }
+  },
+  "search": {
+    "gazing_ball": {
+      "pattern": "na",
+      "model": "basement",
+      "height": 12.0,
+      "confidence": 0.6,
+      "lidar_visible": false
+    },
+    "cone": {
+      "pattern": "na",
+      "model": "basement",
+      "height": 12.0,
+      "confidence": 0.6,
+      "lidar_visible": true
+    },
+    "speaker": {
+      "pattern": "na",
+      "model": "basement",
+      "height": 8.5,
+      "confidence": 0.6,
+      "lidar_visible": false
+    }
+  }
+}

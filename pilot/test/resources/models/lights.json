@@ -1,0 +1,6 @@
+{
+  "ModelType": "tflite",
+  "LabelFile": "pilot/test/resources/models/lights.txt",
+  "ModelFile": "pilot/test/resources/models/lights.tflite",
+  "LandmarkType": "emitter"
+}

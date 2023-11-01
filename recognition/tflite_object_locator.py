@@ -17,6 +17,7 @@ class TFLiteObjectLocator (ObjectLocator):
         self.__keep_latest_image = keep_latest_image
         
         for model_name in model_configs:
+            #logging.getLogger(__name__).info(f"Model {model_name}: {model_configs[model_name]}")
             self.__labels[model_name] = self.read_label_file(model_configs[model_name]['LabelFile'])
             if model_configs[model_name]['ModelType'] in ['tflite', 'lite']:
                 interpreter = tflite.Interpreter(model_path=model_configs[model_name]['ModelFile'], num_threads=4)
@@ -129,7 +130,9 @@ class TFLiteObjectLocator (ObjectLocator):
                 classId = int(detected_classes[0][i])
                 if object_filter is None or self.__labels[m][classId] in object_filter:
                     score = detected_scores[0][i]
-                    if score > min_confidence:
+                    if score > 0.2:# min_confidence:
+                        #logging.getLogger(__name__).info(f"{self.__labels[m][classId]} - Top: {top}, Left: {left}, Bottom: {bottom}, Right: {right}, Conf: {score}")
+                        
                         xmin = left * initial_w
                         ymin = bottom * initial_h
                         xmax = right * initial_w
@@ -137,18 +140,22 @@ class TFLiteObjectLocator (ObjectLocator):
                         box = [xmin, ymin, xmax, ymax]
                         x_center = xmin + ((xmax-xmin)/2)
                         y_center = ymin + ((ymax-ymin)/2)
-                        #rectangles.append(box)
-                        #logging.getLogger(__name__).debug(f"Found {self.__labels[classId]} centered at ({x_center},{y_center}), confidence: {score})")
-                        detected_objects.append({
-                            'object':self.__labels[m][classId],
-                            'x_center':x_center,
-                            'y_center':y_center,
-                            'x_min':xmin,
-                            'x_max':xmax,
-                            'y_min':ymin,
-                            'y_max':ymax,
-                            'confidence':score
-                        })
+                        
+                        if xmin >= 0 and ymin >= 0 and ymax <= last_height and xmax <= last_width:
+                            #rectangles.append(box)
+                            logging.getLogger(__name__).info(f"Found {self.__labels[classId]} centered at ({x_center},{y_center}), confidence: {score}, [({xmin},{ymin}):({xmax},{ymax})]")
+                            detected_objects.append({
+                                'object':self.__labels[m][classId],
+                                'x_center':x_center,
+                                'y_center':y_center,
+                                'x_min':xmin,
+                                'x_max':xmax,
+                                'y_min':ymin,
+                                'y_max':ymax,
+                                'confidence':score
+                            })
+                        else:
+                            logging.getLogger(__name__).warning("Out of bounds object on image, ignoring!")
 
         return detected_objects
 

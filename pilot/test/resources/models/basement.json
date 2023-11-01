@@ -1,0 +1,6 @@
+{
+  "ModelType": "tflite",
+  "LabelFile": "pilot/test/resources/models/basement.txt",
+  "ModelFile": "pilot/test/resources/models/basement.tflite",
+  "LandmarkType": "basic"
+}

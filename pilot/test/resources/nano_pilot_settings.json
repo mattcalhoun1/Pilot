@@ -1,0 +1,31 @@
+{
+	"Vehicle":"Observer",
+    "Platform":"Jetson Nano",
+	"NavServiceUrls":["http://192.168.0.100:8000","http://10.0.0.122:8000"],
+	"LidarEnabledPositioning":true,
+	"LidarEnabledSearch":true,
+	"MultithreadedPositioning":true,
+	"EstimatorMode":"PRECISE",
+	"Altitude":10.5,
+	"CacheLocations" : {
+		"Maps":"pilot/test/resources/maps",
+		"Models":"pilot/test/resources/models",
+		"Images":"pilot/test/resources/images"
+	},
+	"Cameras": {
+		"Right":{
+			"Config":"PI3_STD_HQ_CROPPED_1",
+			"DefaultHeading":123.0,
+			"AlternateHeadings":[100.0,180.0,230.0],
+			"Enabled":true,
+			"VehicleBaseId":1
+		},
+		"Left":{
+			"Config":"PI3_STD_HQ_CROPPED_0",
+			"DefaultHeading":57.0,
+			"AlternateHeadings":[80.0,0.0,-50.0],
+			"Enabled":true,
+			"VehicleBaseId":0
+		}
+	}
+}

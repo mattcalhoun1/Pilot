@@ -12,6 +12,7 @@ import os
 class PilotResources:
     def __init__(self, config_file):
         self.__load_config(config_file)
+        logging.getLogger(__name__).info(f"Initializing resources. Platform: {self.__config['Platform']}")
         self.__assignments = []
         
         self.__map_cache_location = self.__config['CacheLocations']['Maps']

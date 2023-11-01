@@ -9,7 +9,8 @@
       "height": 12.0,
       "altitude": 6.0,
       "confidence": 0.6,
-      "lidar_visible": true
+      "lidar_visible": true,
+      "priority": 6
     },
     "ne_tree": {
       "pattern": "na",
@@ -17,10 +18,11 @@
       "model": "basement",
       "x": 100,
       "y": 108,
-      "height": 24.5,
-      "altitude": 12.25,
+      "height": 24,
+      "altitude": 12,
       "confidence": 0.6,
-      "lidar_visible": true
+      "lidar_visible": true,
+      "priority": 7
     },
     "se_pineapple": {
       "pattern": "na",
@@ -31,7 +33,8 @@
       "height": 14.0,
       "altitude": 7.0,
       "confidence": 0.6,
-      "lidar_visible": true
+      "lidar_visible": true,
+      "priority": 2
     },
     "nw_house": {
       "pattern": "na",
@@ -39,57 +42,61 @@
       "model": "basement",
       "x": -67,
       "y": 69,
-      "height": 7.75,
+      "height": 7,
       "altitude": 3.875,
       "confidence": 0.6,
-      "lidar_visible": false
+      "lidar_visible": false,
+      "priority": 1
     },
     "sw_light": {
-      "pattern":"8",
-      "type":"light",
-      "model":"lights",
-      "x":-136,
-      "y":-80,
-      "height":43,
-      "altitude":39,
-      "confidence":0.25,
-      "lidar_visible":true
-    },	
+      "pattern": "8",
+      "type": "light",
+      "model": "lights",
+      "x": -136,
+      "y": -80,
+      "height": 43,
+      "altitude": 39,
+      "confidence": 0.25,
+      "lidar_visible": true,
+      "priority": 8
+    },
     "nw_light": {
-        "pattern":"2",
-        "type":"light",
-        "model":"lights",
-        "x":-155,
-        "y":159,
-        "height":25,
-        "altitude":34.5,
-        "confidence":0.25,
-        "lidar_visible":true
+      "pattern": "2",
+      "type": "light",
+      "model": "lights",
+      "x": -155,
+      "y": 159,
+      "height": 25,
+      "altitude": 34.5,
+      "confidence": 0.25,
+      "lidar_visible": true,
+      "priority": 9
     },
     "n_light": {
-        "pattern":"3",
-        "type":"light",
-        "model":"lights",
-        "x":-65,
-        "y":287,
-        "height":33,
-        "altitude":50.5,
-        "confidence":0.25,
-        "lidar_visible":true
+      "pattern": "3",
+      "type": "light",
+      "model": "lights",
+      "x": -65,
+      "y": 287,
+      "height": 33,
+      "altitude": 50.5,
+      "confidence": 0.25,
+      "lidar_visible": true,
+      "priority": 10
     }
   },
   "shape": "rectangle",
   "boundaries": {
     "xmin": -150,
-    "ymin": -100,
+    "ymin": -50,
     "xmax": 150,
     "ymax": 250
   },
   "near_boundaries": {
-    "xmin": -160,
-    "ymin": -110,
-    "xmax": 160,
-    "ymax": 260
+    "xmin": -170,
+    "ymin": -100,
+    "xmax": 170,
+    "ymax": 270
   },
   "obstacles": {
     "christmas_tree": {

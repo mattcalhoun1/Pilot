@@ -5,13 +5,19 @@ from arduino.test.test_car import TestCar
 import time
 import logging
 import traceback
+import platform
 
 # this script simply attempts to use the cameras without any elaborate searching or movement
 # and logs (to stdout) the landmarks it sees
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+    
+    # determine if we are on jetson nano or other, choose config file accordingly
     pilot_settings_file = '/home/matt/projects/NavConfig/pi_cm4/pilot_settings.json'
+    if platform.processor() == 'aarch64':
+	    pilot_settings_file = '/home/matt/projects/NavConfig/jetson_nano/pilot_settings.json'
+
     pilot_resources = PilotResources(pilot_settings_file)
 
     # set the default map
