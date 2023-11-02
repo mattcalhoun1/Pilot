@@ -1,0 +1,6 @@
+0 Triangle
+1 Diagonals
+2 X
+3 Square
+4 Line On White
+5 Line On Brown

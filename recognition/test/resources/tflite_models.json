@@ -1,0 +1,14 @@
+{
+    "basement": {
+      "ModelType": "tflite",
+      "LabelFile": "/home/matt/projects/Pilot/recognition/test/resources/models/basement/basement.txt",
+      "ModelFile": "/home/matt/projects/Pilot/recognition/test/resources/models/basement/basement_640.tflite",
+      "LandmarkType": "basic"
+    },
+    "lights": {
+      "ModelType": "tflite",
+      "LabelFile": "/home/matt/projects/Pilot/recognition/test/resources/models/lights/lightslabelmap.txt",
+      "ModelFile": "/home/matt/projects/Pilot/recognition/test/resources/models/lights/lights_640.tflite",
+      "LandmarkType": "emitter"
+    }
+}

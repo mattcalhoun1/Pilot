@@ -1,0 +1,7 @@
+0 cone
+1 house
+2 gazing_ball
+3 pineapple
+4 cat_tree
+5 windmill
+6 speaker

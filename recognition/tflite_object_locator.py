@@ -17,12 +17,12 @@ class TFLiteObjectLocator (ObjectLocator):
         self.__keep_latest_image = keep_latest_image
         
         for model_name in model_configs:
-            #logging.getLogger(__name__).info(f"Model {model_name}: {model_configs[model_name]}")
             self.__labels[model_name] = self.read_label_file(model_configs[model_name]['LabelFile'])
             if model_configs[model_name]['ModelType'] in ['tflite', 'lite']:
                 interpreter = tflite.Interpreter(model_path=model_configs[model_name]['ModelFile'], num_threads=4)
                 interpreter.allocate_tensors()
                 self.__models[model_name] = interpreter
+                logging.getLogger(__name__).info(f"Model {model_name}: TFLite interpreter created.")
             else:
                 raise Exception (f"Unknown model type: {model_configs[model_name]['ModelType']}")
             
@@ -38,11 +38,8 @@ class TFLiteObjectLocator (ObjectLocator):
         return self.__latest_image
 
     def find_objects_in_image(self, image, object_filter = None, min_confidence = 0.4):
-        #interpreter = tflite.Interpreter(model_path=self.__model, num_threads=4)
-        #interpreter.allocate_tensors()
         if self.__keep_latest_image:
             self.__latest_image = image # for retrieving later
-
 
         last_width = None
         last_height = None
@@ -51,6 +48,7 @@ class TFLiteObjectLocator (ObjectLocator):
         detected_objects = []
         
         for m in self.__models:
+            logging.getLogger(__name__).info(f"Checking model {m}")
             interpreter = self.__models[m]
             input_details = interpreter.get_input_details()
             output_details = interpreter.get_output_details()
@@ -76,7 +74,12 @@ class TFLiteObjectLocator (ObjectLocator):
                 picture = None
                 if len(image.shape) == 3: # cv2 camera
                     initial_h, initial_w, channels = image.shape
-                    picture = cv2.resize(image, (width, height))
+                    picture = cv2.resize(image, (width, height), cv2.INTER_CUBIC) # INTER_CUBIC, INTER_AREA, INTER_LINEAR, INTER_NEAREST
+                    #picture = cv2.cvtColor(p, cv2.COLOR_BGR2RGB)
+                    cv2.imwrite('/tmp/tflite.png', picture)
+                    
+                    logging.getLogger(__name__).info(f"Image Shape: {image.shape}, Model Wants h:{height}, w: {width}")
+                    
                 else:
                     rgb = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
                     initial_h, initial_w, channels = rgb.shape
@@ -85,6 +88,7 @@ class TFLiteObjectLocator (ObjectLocator):
                 input_data = np.expand_dims(picture, axis=0)
                 if floating_model:
                     input_data = (np.float32(input_data) - 127.5) / 127.5
+                    logging.getLogger(__name__).info(f"Floating point")
                 last_input_data = input_data
 
             # invoke the detection model
@@ -115,13 +119,13 @@ class TFLiteObjectLocator (ObjectLocator):
                 detected_classes = interpreter.get_tensor(output_details[3]['index'])
 
                 logging.getLogger(__name__).debug("Detected Boxes:")
-                logging.getLogger(__name__).debug(f"{detected_boxes}")
+                logging.getLogger(__name__).info(f"{detected_boxes}")
                 logging.getLogger(__name__).debug("num boxes:")
                 logging.getLogger(__name__).debug(f"{num_boxes}")
                 logging.getLogger(__name__).debug("detected classes:")
-                logging.getLogger(__name__).debug(f"{detected_classes}")
+                logging.getLogger(__name__).info(f"{detected_classes}")
                 logging.getLogger(__name__).debug("detected scores:")
-                logging.getLogger(__name__).debug(f"{detected_scores}")
+                logging.getLogger(__name__).info(f"{detected_scores}")
             # end fix
 
 

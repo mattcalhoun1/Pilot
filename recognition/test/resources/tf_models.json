@@ -1,0 +1,14 @@
+{
+    "basement": {
+      "ModelType": "tf",
+      "LabelFile": "/home/matt/projects/Pilot/recognition/test/resources/models/basement/basement.txt",
+      "ModelFile": "/home/matt/projects/Pilot/recognition/test/resources/models/basement_640/",
+      "LandmarkType": "basic"
+    },
+    "lights": {
+      "ModelType": "tf",
+      "LabelFile": "/home/matt/projects/Pilot/recognition/test/resources/models/lights/lightslabelmap.txt",
+      "ModelFile": "/home/matt/projects/Pilot/recognition/test/resources/models/lights_640/",
+      "LandmarkType": "emitter"
+    }
+}
