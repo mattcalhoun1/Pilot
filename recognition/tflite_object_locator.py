@@ -48,7 +48,6 @@ class TFLiteObjectLocator (ObjectLocator):
         detected_objects = []
         
         for m in self.__models:
-            logging.getLogger(__name__).info(f"Checking model {m}")
             interpreter = self.__models[m]
             input_details = interpreter.get_input_details()
             output_details = interpreter.get_output_details()
@@ -63,7 +62,7 @@ class TFLiteObjectLocator (ObjectLocator):
             if height == last_height and width == last_width and last_input_data is not None and last_floating_model == floating_model:
                 input_data = last_input_data
             else:
-                logging.getLogger(__name__).debug("Reusing image for second model pass")
+                logging.getLogger(__name__).debug("Converting image, since this is first model pass")
                 last_width = width
                 last_height = height
                 last_floating_model = floating_model
@@ -73,12 +72,12 @@ class TFLiteObjectLocator (ObjectLocator):
                 initial_w = None
                 picture = None
                 if len(image.shape) == 3: # cv2 camera
-                    initial_h, initial_w, channels = image.shape
+                    # model does better with gray scale
+                    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                    initial_h, initial_w = image.shape
                     picture = cv2.resize(image, (width, height), cv2.INTER_CUBIC) # INTER_CUBIC, INTER_AREA, INTER_LINEAR, INTER_NEAREST
-                    #picture = cv2.cvtColor(p, cv2.COLOR_BGR2RGB)
-                    cv2.imwrite('/tmp/tflite.png', picture)
-                    
-                    logging.getLogger(__name__).info(f"Image Shape: {image.shape}, Model Wants h:{height}, w: {width}")
+                    picture = cv2.cvtColor(picture, cv2.COLOR_GRAY2RGB)
+                    cv2.imwrite('/tmp/tflite_locator.png', picture)
                     
                 else:
                     rgb = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
@@ -88,7 +87,6 @@ class TFLiteObjectLocator (ObjectLocator):
                 input_data = np.expand_dims(picture, axis=0)
                 if floating_model:
                     input_data = (np.float32(input_data) - 127.5) / 127.5
-                    logging.getLogger(__name__).info(f"Floating point")
                 last_input_data = input_data
 
             # invoke the detection model
@@ -112,20 +110,20 @@ class TFLiteObjectLocator (ObjectLocator):
 
                 # order in the custom model:
                 # 0 = scores, 1 = boxes, 2 = num objects detected?, 3 = classes
-
+                
                 detected_scores = interpreter.get_tensor(output_details[0]['index'])
                 detected_boxes = interpreter.get_tensor(output_details[1]['index'])
                 num_boxes = interpreter.get_tensor(output_details[2]['index'])
                 detected_classes = interpreter.get_tensor(output_details[3]['index'])
 
                 logging.getLogger(__name__).debug("Detected Boxes:")
-                logging.getLogger(__name__).info(f"{detected_boxes}")
+                logging.getLogger(__name__).debug(f"{detected_boxes}")
                 logging.getLogger(__name__).debug("num boxes:")
                 logging.getLogger(__name__).debug(f"{num_boxes}")
                 logging.getLogger(__name__).debug("detected classes:")
-                logging.getLogger(__name__).info(f"{detected_classes}")
+                logging.getLogger(__name__).debug(f"{detected_classes}")
                 logging.getLogger(__name__).debug("detected scores:")
-                logging.getLogger(__name__).info(f"{detected_scores}")
+                logging.getLogger(__name__).debug(f"{detected_scores}")
             # end fix
 
 
@@ -134,32 +132,32 @@ class TFLiteObjectLocator (ObjectLocator):
                 classId = int(detected_classes[0][i])
                 if object_filter is None or self.__labels[m][classId] in object_filter:
                     score = detected_scores[0][i]
-                    if score > 0.2:# min_confidence:
+                    if score > min_confidence:
                         #logging.getLogger(__name__).info(f"{self.__labels[m][classId]} - Top: {top}, Left: {left}, Bottom: {bottom}, Right: {right}, Conf: {score}")
                         
                         xmin = left * initial_w
-                        ymin = bottom * initial_h
+                        ymin = top * initial_h
                         xmax = right * initial_w
-                        ymax = top * initial_h
+                        ymax = bottom * initial_h
                         box = [xmin, ymin, xmax, ymax]
                         x_center = xmin + ((xmax-xmin)/2)
                         y_center = ymin + ((ymax-ymin)/2)
                         
-                        if xmin >= 0 and ymin >= 0 and ymax <= last_height and xmax <= last_width:
+                        #if xmin >= 0 and ymin >= 0 and ymax <= last_height and xmax <= last_width:
                             #rectangles.append(box)
-                            logging.getLogger(__name__).info(f"Found {self.__labels[classId]} centered at ({x_center},{y_center}), confidence: {score}, [({xmin},{ymin}):({xmax},{ymax})]")
-                            detected_objects.append({
-                                'object':self.__labels[m][classId],
-                                'x_center':x_center,
-                                'y_center':y_center,
-                                'x_min':xmin,
-                                'x_max':xmax,
-                                'y_min':ymin,
-                                'y_max':ymax,
-                                'confidence':score
-                            })
-                        else:
-                            logging.getLogger(__name__).warning("Out of bounds object on image, ignoring!")
+                            #logging.getLogger(__name__).info(f"Found {self.__labels[m][classId]} centered at ({x_center},{y_center}), confidence: {score}, [({xmin},{ymin}):({xmax},{ymax})]")
+                        detected_objects.append({
+                            'object':self.__labels[m][classId],
+                            'x_center':x_center,
+                            'y_center':y_center,
+                            'x_min':max(1,xmin),
+                            'x_max':min(initial_w, xmax),
+                            'y_min':max(1,ymin),
+                            'y_max':min(initial_h, ymax),
+                            'confidence':score
+                        })
+                        #else:
+                        #    logging.getLogger(__name__).warning("Out of bounds object on image, ignoring!")
 
         return detected_objects
 

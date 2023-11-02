@@ -33,7 +33,7 @@ class TestTFLiteObjectLocator(unittest.TestCase):
         logging.getLogger(__name__).info("Left Cam: models loaded")
         
         # locate some objects in the left camera
-        located_objects = locator.find_objects_on_camera(camera = self.__get_left_camera(), object_filter = None, min_confidence = 0.3)
+        located_objects = locator.find_objects_on_camera(camera = self.__get_left_camera(), object_filter = None, min_confidence = 0.1)
         
         logging.getLogger(__name__).info(f"Left Cam Located {located_objects}")
 

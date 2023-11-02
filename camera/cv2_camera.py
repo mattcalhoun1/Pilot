@@ -9,8 +9,8 @@ class CV2Camera (Camera):
 
     def __init__(self, high_res = False, flipped = True, default_focus_distance = 5, auto_optimize = True, auto_optimize_object_locator = None, sensor_id = 0):
         self.__sensor_id = sensor_id
-        self.__res_w = 1640 if high_res == True else 1640
-        self.__res_h = 1232 if high_res == True else 922
+        self.__res_w = 1640 if high_res == True else 1920
+        self.__res_h = 1232 if high_res == True else 1080
         self.__frame_rate = 10
         self.__flipped = flipped
         
@@ -122,16 +122,21 @@ class CV2Camera (Camera):
 
 
 
-    def x__gstreamer_pipeline(self):
+    def __gstreamer_pipeline_old(self):
         return (
             "nvarguscamerasrc sensor-id=%d ! "
-            "video/x-raw(memory:NVMM), framerate=(fraction)%d/1 ! "
+            "video/x-raw(memory:NVMM), width=(int)%d, height=(int)%d, framerate=(fraction)%d/1 ! "
             "nvvidconv flip-method=%d ! "
+            "video/x-raw, width=(int)%d, height=(int)%d, format=(string)BGRx ! "
             "videoconvert ! "
             "video/x-raw, format=(string)BGR ! appsink"
             % (
                 self.__sensor_id,
+                self.__res_w,
+                self.__res_h,
                 self.__frame_rate,
-                2 if self.__flipped else 0
+                2 if self.__flipped else 0,
+                self.__res_w,
+                self.__res_h,
             )
         )

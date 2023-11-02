@@ -20,6 +20,29 @@ class CameraInfo:
     CameraConfig = {
         'PI2_STD_HQ_CROPPED_0': {
             'SENSOR_ID':0,
+            'FOV_H': 38.42,
+            'FOV_V': 24.354,
+            'CLASS': 'CV2Camera',
+            'HIGHRES':False,
+            'FLIPPED':True,
+            'DEFAULT_FOCUS':5,
+            'AUTO_OPTIMIZE':True,
+            'IMAGE_RESOLUTION':ImageResolution(1920.0,1080.0)
+        },        
+        'PI2_STD_HQ_CROPPED_1': {
+            'SENSOR_ID':1, 
+            'FOV_H': 38.42,
+            'FOV_V': 24.354,
+            'CLASS': 'CV2Camera',
+            'HIGHRES':False,
+            'FLIPPED':True,
+            'DEFAULT_FOCUS':5,
+            'AUTO_OPTIMIZE':True,
+            'IMAGE_RESOLUTION':ImageResolution(1920.0,1080.0)
+        },
+
+        'xPI2_STD_HQ_CROPPED_0': {
+            'SENSOR_ID':0,
             'FOV_H': 71.0,
             'FOV_V': 49.4,
             'CLASS': 'CV2Camera',
@@ -29,8 +52,8 @@ class CameraInfo:
             'AUTO_OPTIMIZE':True,
             'IMAGE_RESOLUTION':ImageResolution(1640.0,1232.0)
         },        
-        'PI2_STD_HQ_CROPPED_1': {
-            'SENSOR_ID':1,
+        'xPI2_STD_HQ_CROPPED_1': {
+            'SENSOR_ID':1, 
             'FOV_H': 71.0,
             'FOV_V': 49.4,
             'CLASS': 'CV2Camera',

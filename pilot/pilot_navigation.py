@@ -194,7 +194,7 @@ class PilotNavigation:
                 c_located_objects = None
                 for locate_cycle in range(3):
                     c_located_objects = self.__locator.find_objects_on_camera(camera=self.__get_camera(c), min_confidence = self.__min_object_confidence)
-                    logging.getLogger(__name__).info(f"Camera {c} found {len(c_located_objects)} objects: {c_located_objects}")
+                    logging.getLogger(__name__).debug(f"Camera {c} found {len(c_located_objects)} objects: {c_located_objects}")
                     located_landmarks[c] = {}
                     for f in self.__finders[c]:
                         f_located = f.locate_landmarks(object_locations=c_located_objects)
@@ -325,12 +325,11 @@ class PilotNavigation:
                         if lid not in unique_landmark_ids:
                             unique_landmark_ids.append(lid)
                             l = landmarks[c][lid]
-                            logging.getLogger(__name__).info(f"Cam {c} (@{camera_heading}) Located: {lid} @ {l['x1'],l['y1']} - {l['x2'],l['y2']}")
+                            logging.getLogger(__name__).debug(f"Cam {c} (@{camera_heading}) Located: {lid} @ {l['x1'],l['y1']} - {l['x2'],l['y2']}")
                             newly_found_landmarks[lid] = l
                         
                     if len(newly_found_landmarks) > 0:
                         combined_landmarks = combined_landmarks + self.__format_landmarks_for_position(located_objects=newly_found_landmarks,camera_heading=camera_heading)
-                        logging.getLogger(__name__).info(f"Combined {combined_landmarks}")
                 
                 # if we prefer to have more and there are repositions left, do that now
                 if len(unique_landmark_ids) < preferred_num_landmarks and num_repositions_used < num_repositions_allowed:

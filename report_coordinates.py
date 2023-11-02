@@ -46,8 +46,8 @@ if __name__ == '__main__':
             x, y, heading, confidence = pilot_nav.get_coords_and_heading(
                 min_num_landmarks=2,
                 preferred_num_landmarks=3,
-                allow_camera_reposition=False,
-                cam_start_default_position=False,display_landmarks_on_vehicle=False
+                allow_camera_reposition=True,
+                cam_start_default_position=True,display_landmarks_on_vehicle=False
             )
             logging.getLogger(__name__).info(f"Reported Location: ({x},{y}). Heading: {heading}. Confidence: {confidence}")
             

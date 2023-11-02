@@ -111,11 +111,11 @@ class EmitterLandmarkFinder (LandmarkFinder) :
         for g in groups:
             group_id = self.get_emitter_group_identity(g)
             if group_id is None:
-                logging.getLogger(__name__).info(f'found group of size: {len(g.get_emitters())} centered at: {g.get_group_center()}, height: {g.get_height()}')
+                logging.getLogger(__name__).debug(f'found group of size: {len(g.get_emitters())} centered at: {g.get_group_center()}, height: {g.get_height()}')
             else:
                 g.set_identity(group_id)
                 known_groups.append(g)
-                logging.getLogger(__name__).info(f'Found {group_id} - size: {len(g.get_emitters())} centered at: {g.get_group_center()}, height: {g.get_height()}')
+                logging.getLogger(__name__).debug(f'Found {group_id} - size: {len(g.get_emitters())} centered at: {g.get_group_center()}, height: {g.get_height()}')
 
         return known_groups
 
