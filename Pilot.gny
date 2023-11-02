@@ -28,10 +28,22 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=0
-FILE_NAME_0=585;Python;0;EUTF-8;1;1;0;%2Fhome%2Fmatt%2Fprojects%2FPilot%2Freport_coordinates.py;0;4
-FILE_NAME_1=307;Python;0;EUTF-8;1;1;0;%2Fhome%2Fmatt%2Fprojects%2FPilot%2Fpilot%2Fpilot_resources.py;0;4
-FILE_NAME_2=0;Python;0;EUTF-8;1;1;0;%2Fhome%2Fmatt%2Fprojects%2FPilot%2Fpilot%2Fpilot_navigation.py;0;4
+current_page=13
+FILE_NAME_0=707;Python;0;EUTF-8;1;1;0;%2Fhome%2Fmatt%2Fprojects%2FPilot%2Freport_coordinates.py;0;4
+FILE_NAME_1=3246;Python;0;EUTF-8;1;1;0;%2Fhome%2Fmatt%2Fprojects%2FPilot%2Fpilot%2Fpilot_resources.py;0;4
+FILE_NAME_2=8356;Python;0;EUTF-8;1;1;0;%2Fhome%2Fmatt%2Fprojects%2FPilot%2Fpilot%2Fpilot_navigation.py;0;4
+FILE_NAME_3=1471;Python;0;EUTF-8;0;1;0;%2Fhome%2Fmatt%2Fprojects%2FPilot%2Freport_landmarks.py;0;4
+FILE_NAME_4=160;JSON;0;EUTF-8;0;1;0;%2Fhome%2Fmatt%2Fprojects%2FPilot%2Fpilot%2Ftest%2Fresources%2Fnano_pilot_settings.json;0;4
+FILE_NAME_5=5700;Python;0;EUTF-8;0;1;0;%2Fhome%2Fmatt%2Fprojects%2FPilot%2Frecognition%2Ftflite_object_locator.py;0;4
+FILE_NAME_6=0;Python;0;EUTF-8;0;1;0;%2Fhome%2Fmatt%2Fprojects%2FPilot%2Fpilot%2Ftest%2Fpath_finder_test.py;0;4
+FILE_NAME_7=7924;Python;0;EUTF-8;0;1;0;%2Fhome%2Fmatt%2Fprojects%2FPilot%2Fpilot%2Ftest%2Fpilot_navigation_test.py;0;4
+FILE_NAME_8=434;JSON;0;EUTF-8;0;1;0;%2Fhome%2Fmatt%2Fprojects%2FPilot%2Fpilot%2Ftest%2Fresources%2Fpilot_settings.json;0;4
+FILE_NAME_9=2674;Python;0;EUTF-8;0;1;0;%2Fhome%2Fmatt%2Fprojects%2FPilot%2Fposition%2Fposition_estimator_with_clustering.py;0;4
+FILE_NAME_10=744;Python;0;EUTF-8;0;1;0;%2Fhome%2Fmatt%2Fprojects%2FPilot%2Fcamera%2Fcamera_info.py;0;4
+FILE_NAME_11=0;Python;0;EUTF-8;0;1;0;%2Fhome%2Fmatt%2Fprojects%2FPilot%2Fcamera%2Fcamera_manager.py;0;4
+FILE_NAME_12=0;Python;0;EUTF-8;0;1;0;%2Fhome%2Fmatt%2Fprojects%2FPilot%2Fcamera%2Fcamera.py;0;4
+FILE_NAME_13=2983;Python;0;EUTF-8;0;1;0;%2Fhome%2Fmatt%2Fprojects%2FPilot%2Fcamera%2Fcv2_camera.py;0;4
+FILE_NAME_14=0;Python;0;EUTF-8;0;1;0;%2Fhome%2Fmatt%2Fprojects%2FPilot%2Fcamera%2Fimage_resolution.py;0;4
 
 [VTE]
 last_dir=/home/matt
