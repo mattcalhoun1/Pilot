@@ -1,1 +1,1 @@
-python3 -m unittest discover -p "*tflite_test.py"
+python3 -m unittest discover -p "*emitter_landmark_finder_test.py"

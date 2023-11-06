@@ -1,6 +1,12 @@
 from landmarks.emitter_viewed_location import EmitterViewedLocation
 import logging
 import time
+import statistics
+
+class EmitterGroupPattern:
+    VERTICAL_LINE = 0
+    SQUARE = 1
+    SIDEWAYS_TRIANGLE = 2
 
 class EmitterGroup:
     def __init__(self):
@@ -8,6 +14,13 @@ class EmitterGroup:
         self.__identity = None
         self.__time = time.time()
         self.__confidence = 0
+        self.__pattern = EmitterGroupPattern.VERTICAL_LINE # default
+        
+    def set_pattern(self, pattern):
+        self.__pattern = pattern
+        
+    def get_pattern(self):
+        return self.__pattern
 
     def set_confidence (self, confidence):
         self.__confidence = confidence
@@ -44,30 +57,46 @@ class EmitterGroup:
         if len(self.__emitters) == 0:
             return (0,0)
 
-        center_x, center_y = self.__emitters[0].get_center()
-        center_y += self.get_height()
+        if self.__pattern == EmitterGroupPattern.VERTICAL_LINE:
+            center_x, center_y = self.__emitters[0].get_center()
+            center_y += int(self.get_height()/2)
+        elif self.__pattern == EmitterGroupPattern.SQUARE:
+            center_x1, center_y1 = self.__emitters[0].get_center()
+            center_x2, center_y2 = self.__emitters[1].get_center()
+            center_x_last, center_y_last = self.__emitters[-1].get_center()
+            center_x = min(center_x1, center_x2) + int(abs(center_x1 - center_x2)/2)
+            center_y = statistics.mean([center_y1, center_y2]) + (self.get_height()/2)
+        elif self.__pattern == EmitterGroupPattern.SIDEWAYS_TRIANGLE:
+            center_x1, center_y1 = self.__emitters[0].get_center()
+            center_x2, center_y2 = self.__emitters[1].get_center()
+            center_x_last, center_y_last = self.__emitters[-1].get_center()
+            center_x = min(center_x1, center_x2) + int(abs(center_x1 - center_x2)/2)
+            center_y = statistics.mean([center_y1, center_y_last])
+            
+            
         return center_x, center_y
-
-        # returns the average of top and bottom points
-        # center means center of the vertically aligned points
-        # is this accurate enough measure of center?
-        #x_total = 0
-        #y_total = 0
-
-        #for i in [0,-1]:
-        #    e_center_x, e_center_y = self.__emitters[i].get_center()
-        #    x_total += e_center_x
-        #    y_total += e_center_y
-        
-        #return ((x_total / 2), (y_total / 2))
-        
+       
     def get_emitters (self):
         return self.__emitters
     
     def get_height (self):
-        top_center_x, top_center_y = self.__emitters[0].get_center()
-        bottom_center_x, bottom_center_y = self.__emitters[-1].get_center()
-        return abs(bottom_center_y - top_center_y)
+        if self.__pattern == EmitterGroupPattern.VERTICAL_LINE or self.__pattern == EmitterGroupPattern.SIDEWAYS_TRIANGLE:
+            top_center_x, top_center_y = self.__emitters[0].get_center()
+            bottom_center_x, bottom_center_y = self.__emitters[-1].get_center()
+            return abs(bottom_center_y - top_center_y)
+        elif self.__pattern == EmitterGroupPattern.SQUARE:
+            # height is abs value of ( avg of top two - avg bottom two )
+            top_x1, top_y1 = self.__emitters[0].get_center()
+            top_x2, top_y2 = self.__emitters[1].get_center()
+            mid_top_y = statistics.mean([top_y1, top_y2])
+
+            bottom_x1, bottom_y1 = self.__emitters[2].get_center()
+            bottom_x2, bottom_y2 = self.__emitters[3].get_center()
+            mid_bottom_y = statistics.mean([bottom_y1, bottom_y2])
+            
+            return int(abs(mid_top_y - mid_bottom_y))
+            
+        return None
 
     def get_width (self):
         # get the center of each point. furthest right minus furthest left is the width
