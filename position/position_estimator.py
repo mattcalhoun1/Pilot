@@ -138,8 +138,8 @@ class PositionEstimator:
     def extract_distances (self, view_angles, view_altitude, filter_unmapped_objects = True, lidar_map = None):
         # loop through all the visible angles and get our distance to them
         distances = {}
-        add_lidar = False
         for landmark_id in view_angles:
+            add_lidar = False
             selected_angle = None
             if self.__field_map.is_landmark_known(landmark_id):
                 # if > 1 reported, choose the one with highest confidence
