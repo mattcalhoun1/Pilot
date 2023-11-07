@@ -40,6 +40,13 @@ class PilotNavigation:
         self.__lidar_max_age = 600 # max seconds old lidar data can be. As long as the vehicle doesn't move the lidar should be good indefinitely, as long as objects don't move around it
 
         self.__locator = TFLiteObjectLocator(model_configs = pilot_resources.get_model_configs())
+        self.__estimator_mode = PilotNavigation.__get_estimator_mode(self.__config['EstimatorMode'])
+        self.__default_preferred_num_landmarks = 3
+        if self.__estimator_mode == EstimatorMode.FAST:
+            self.__default_preferred_num_landmarks = 2
+        elif self.__estimator_mode == EstimatorMode.VERY_PRECISE:
+            self.__default_preferred_num_landmarks = 4
+                                                                     
 
         self.__delay_between_location_attempts = .2 # how long to wait between location attemps
         self.__max_location_attempts = 2 # how many times to try retrieve location before skipping
@@ -107,7 +114,7 @@ class PilotNavigation:
                 view_height=CameraInfo.get_resolution_height(config_id=self.__enabled_cameras[c]),
                 base_front=90.0,
                 use_multithreading=self.__config['MultithreadedPositioning'],
-                estimator_mode = PilotNavigation.__get_estimator_mode(self.__config['EstimatorMode'])
+                estimator_mode = PilotNavigation.__get_estimator_mode(self.__estimator_mode)
             )        
 
     def __get_estimator_mode (estimator_mode_str):
@@ -288,8 +295,7 @@ class PilotNavigation:
             self.__lidar_time = time.time()
         return self.__lidar_map
 
-    def get_coords_and_heading (self, min_num_landmarks = 2, preferred_num_landmarks = 3, allow_camera_reposition = True, cam_start_default_position = True, display_landmarks_on_vehicle= False):
-
+    def get_coords_and_heading (self, min_num_landmarks = 2, allow_camera_reposition = True, cam_start_default_position = True, display_landmarks_on_vehicle= False):
         if cam_start_default_position:
             # ensure cameras are at correct heading
             self.reposition_cameras()
@@ -314,7 +320,7 @@ class PilotNavigation:
             unique_landmark_ids = []
             combined_landmarks = []
 
-            while confidence < Confidence.CONFIDENCE_MEDIUM and successes < self.__min_location_success and num_repositions_used <= num_repositions_allowed and len(unique_landmark_ids) < preferred_num_landmarks:
+            while confidence < Confidence.CONFIDENCE_MEDIUM and successes < self.__min_location_success and num_repositions_used <= num_repositions_allowed and len(unique_landmark_ids) < self.__default_preferred_num_landmarks:
                 landmarks = self.locate_landmarks(display_on_vehicle=display_landmarks_on_vehicle)
                 
                 for c in landmarks:
@@ -332,7 +338,7 @@ class PilotNavigation:
                         combined_landmarks = combined_landmarks + self.__format_landmarks_for_position(located_objects=newly_found_landmarks,camera_heading=camera_heading)
                 
                 # if we prefer to have more and there are repositions left, do that now
-                if len(unique_landmark_ids) < preferred_num_landmarks and num_repositions_used < num_repositions_allowed:
+                if len(unique_landmark_ids) < self.__default_preferred_num_landmarks and num_repositions_used < num_repositions_allowed:
                     logging.getLogger(__name__).info(f"Prefer more landmarks, only ({len(unique_landmark_ids)}) found. Repositioning to find more.")
                     logging.getLogger(__name__).info(f"Combined Landmarks: {combined_landmarks}")
                     # rotate the cameras to the next position

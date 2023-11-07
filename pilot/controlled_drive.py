@@ -130,7 +130,6 @@ class ControllerListener(Controller):
             logging.getLogger(__name__).info("Getting quick position")
             self.__pilot_nav.get_coords_and_heading (
                 min_num_landmarks = 2, 
-                preferred_num_landmarks = 3, 
                 allow_camera_reposition = False, 
                 cam_start_default_position = False,
                 display_landmarks_on_vehicle=True
