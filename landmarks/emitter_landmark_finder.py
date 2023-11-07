@@ -18,7 +18,7 @@ class EmitterLandmarkFinder (LandmarkFinder) :
 
     def extract_landmarks_from_locations (self, object_locations, id_filter = ['light'], confidence_threshold = None):
         emitter_locations = []
-        #logging.getLogger(__name__).info(f"Full object locations: {object_locations}")
+        logging.getLogger(__name__).debug(f"Full object locations: {object_locations}")
         for obj in object_locations:
             if id_filter is None or obj['object'] in id_filter:
                 x1 = obj['x_min']
@@ -100,7 +100,7 @@ class EmitterLandmarkFinder (LandmarkFinder) :
         for g in vertical_lines + triangles + squares:
             group_id = self.get_emitter_group_identity(g)
             if group_id is None:
-                logging.getLogger(__name__).debug(f'found unmarked group, pattern: {g.get_pattern()} of size: {len(g.get_emitters())} centered at: {g.get_group_center()}, height: {g.get_height()}')
+                logging.getLogger(__name__).info(f'found unmarked group, pattern: {g.get_pattern()} of size: {len(g.get_emitters())} centered at: {g.get_group_center()}, height: {g.get_height()}')
             else:
                 g.set_identity(group_id)
                 known_groups.append(g)
@@ -156,7 +156,7 @@ class EmitterLandmarkFinder (LandmarkFinder) :
         
         return pairs
 
-    def __extract_squares_search (self, vertical_sets, vertical_leeway = 0.05, max_height_diff_pct = 0.05, max_horz_dist_pct = 0.2):
+    def __extract_squares_search (self, vertical_sets, vertical_leeway = 0.08, max_height_diff_pct = 0.1, max_horz_dist_pct = 0.2):
         squares = []
         matched_groups = []
         matched_emitter_keys = []
@@ -202,14 +202,15 @@ class EmitterLandmarkFinder (LandmarkFinder) :
                             # check for traingle-type match between the pair and this loner
                             if self.__are_group_and_emitter_vertically_aligned (s1_pair, e, vertical_leeway, max_horz_dist_pct):
                                 if self.__is_triangle_wide_enough (s1_pair, e, min_width_pct):
-                                    matched_groups.append(this_key)
-                                        
-                                    # Add the loner point to the group, and change its type to triangle
-                                    s1_pair.set_pattern(EmitterGroupPattern.SIDEWAYS_TRIANGLE)
-                                    s1_pair.add_emitter(e)
-                                    self.__set_emitters_as_matched(s1_pair, matched_emitter_keys)
-                                    triangles.append(s1_pair)
-                                    break
+                                    if self.__is_triangle_tip_centered (s1_pair, e):
+                                        matched_groups.append(this_key)
+                                            
+                                        # Add the loner point to the group, and change its type to triangle
+                                        s1_pair.set_pattern(EmitterGroupPattern.SIDEWAYS_TRIANGLE)
+                                        s1_pair.add_emitter(e)
+                                        self.__set_emitters_as_matched(s1_pair, matched_emitter_keys)
+                                        triangles.append(s1_pair)
+                                        break
         return triangles, matched_emitter_keys
 
 
@@ -222,6 +223,15 @@ class EmitterLandmarkFinder (LandmarkFinder) :
         e_center_x, e_center_y = emitter.get_center()
         
         if (abs(g_center_x - e_center_x) / self.get_image_resolution().get_width()) >= min_width_pct:
+            return True
+        return False
+
+    def __is_triangle_tip_centered (self, group, emitter):
+        g_center_x, g_center_y = group.get_group_center()
+        e_center_x, e_center_y = emitter.get_center()
+        
+        # has to be within 2% of vertical center
+        if (abs(g_center_y - e_center_y) / self.get_image_resolution().get_width()) <= 0.02:
             return True
         return False
  
