@@ -224,14 +224,14 @@ class PilotNavigation:
                 if self.__save_images:
                     # save the image with bound boxes for inspection. the distance calculation can be slow!
                     latest_img = self.__locator.get_latest_image()
-                    image_file = f"{self.__config['CacheLocations']['Images']}/coordinates_cam_{c}.png"
+                    image_file = f"{self.__config['CacheLocations']['Images']}/coordinates_cam_{c}_{round(self.__camera_headings[c])}.png"
                     LandmarkLabeler().export_labeled_image(
                         image = latest_img,
                         landmarks=located_landmarks[c],
                         distances=distances,
                         angles=angles,
                         file_name=image_file)
-                    self.__newest_images[c] = image_file
+                    self.__newest_images[f"{c}_{round(self.__camera_headings[c])}"] = image_file
             except Exception as e:
                 logging.getLogger(__name__).warning(f"Locate landmarks failed. Possibly camera glitch: {e}")
         
@@ -369,8 +369,8 @@ class PilotNavigation:
                         views.append({
                             'image_file':image_location,
                             'image_format':'png',
-                            'camera_id':c,
-                            'camera_heading':self.__camera_headings[c]
+                            'camera_id':c.split('_')[0],
+                            'camera_heading':c.split('_')[1]
                         })
                     self.__pilot_logger.log_coordinates_and_images(map_id = self.__map_id, x = x, y = y, heading = heading, images=views)
                 else:
@@ -382,12 +382,18 @@ class PilotNavigation:
             self.__last_confidence = confidence
             self.__last_coord_time = time.time()
 
+            # clear image buffer
+            self.__newest_images = {}
+
             # display on vehicle, if configured
             if x is not None and y is not None and heading is not None:
                 self.__vehicle.display_position(x=x, y=y, heading=heading)
 
             return x,y,heading,confidence
-        
+
+        # clear image buffer
+        self.__newest_images = {}
+
         # not enough successes to report a location
         return None,None,None,None
 
