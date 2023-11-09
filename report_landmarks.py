@@ -11,7 +11,7 @@ import platform
 # and logs (to stdout) the landmarks it sees
 
 if __name__ == '__main__':
-    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+    logging.basicConfig(format='%(asctime)s [%(levelname)s] %(module)s:%(message)s', level=logging.INFO)
     
     # determine if we are on jetson nano or other, choose config file accordingly
     pilot_settings_file = '/home/matt/projects/NavConfig/pi_cm4/pilot_settings.json'

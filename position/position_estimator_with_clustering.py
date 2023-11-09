@@ -34,7 +34,7 @@ class PositionEstimatorWithClustering (PositionEstimator):
         distances =self.extract_distances(view_angles=angles, view_altitude=view_altitude, lidar_map = lidar_map)
         lidar_hits = self.count_lidar_hits(distances)
 
-        logging.getLogger(__name__).info(f"Estimated distances: {distances}")
+        #logging.getLogger(__name__).info(f"Estimated distances: {distances}")
 
         allowed_heading_variance = 0.09
         if estimator_mode == EstimatorMode.PRECISE:
@@ -86,7 +86,13 @@ class PositionEstimatorWithClustering (PositionEstimator):
 
             heading = self.get_heading(centroid_x, centroid_y, angles)
 
-        return centroid_x, centroid_y, heading, conf
+        basis = {
+            'angles':angles,
+            'distances':distances,
+            'landmarks':located_objects
+        }
+
+        return centroid_x, centroid_y, heading, conf, basis
 
     def __remove_heading_outliers (self, headings, std_dev_threshold = 3.0):
         cleaned_headings = []

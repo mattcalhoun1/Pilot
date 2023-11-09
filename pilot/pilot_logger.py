@@ -25,7 +25,7 @@ class PilotLogger:
         return True
         
     
-    def log_coordinates (self, map_id, x, y, heading):
+    def log_coordinates (self, map_id, x, y, heading, basis):
         try:
             resp = self.__get_nav_service().log_position_and_heading(
                 vehicle_id = self.__vehicle_id,
@@ -33,16 +33,17 @@ class PilotLogger:
                 map_id = map_id,
                 x = x,
                 y = y,
-                heading = heading
+                heading = heading,
+                basis = basis
             )
             return resp
         except Exception as e:
             logging.getLogger(__name__).error(f"Log coordinates failed: {e}")
             return None
 
-    def log_coordinates_and_images (self, map_id, x, y, heading, images):
+    def log_coordinates_and_images (self, map_id, x, y, heading, images, basis):
         # log the coordinates and retrieve the new entry num
-        resp = self.log_coordinates(map_id, x, y, heading)
+        resp = self.log_coordinates(map_id, x, y, heading, basis)
         entry_num = resp['entry_num']
         
         # any images we save are attached to the given entry entry_num

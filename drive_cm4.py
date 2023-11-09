@@ -4,7 +4,7 @@ import logging
 import time
 
 if __name__ == '__main__':
-    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)    
+    logging.basicConfig(format='%(asctime)s [%(levelname)s] %(module)s:%(message)s', level=logging.INFO)
     
     car = MecCar()
     p = Pilot('/home/matt/projects/NavConfig/pi_cm4/pilot_settings.json', vehicle=car)

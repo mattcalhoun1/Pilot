@@ -241,7 +241,7 @@ class TestPositionEstimatorWithClustering(unittest.TestCase):
         # get visual degrees for each point
         #estimator = PositionEstimatorWithClustering(curr_map, horizontal_fov = 62.2, vertical_fov = 48.8, view_width=1640.0, view_height=1232.0)
         estimator = PositionEstimatorWithClustering(curr_map, horizontal_fov = 71.0, vertical_fov = 49.4, view_width=1640.0, view_height=1232.0)
-        x, y, heading, confidence = estimator.get_coords_and_heading (located_objects = located_objects,  view_altitude = 8.75, estimator_mode = EstimatorMode.FAST)
+        x, y, heading, confidence, basis = estimator.get_coords_and_heading (located_objects = located_objects,  view_altitude = 8.75, estimator_mode = EstimatorMode.FAST)
 
         # actual coordinates are 6, -50 with heading of around 30
         self.assertGreaterEqual(x,0)

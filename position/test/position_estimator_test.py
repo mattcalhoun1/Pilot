@@ -434,7 +434,7 @@ class TestPositionEstimator(unittest.TestCase):
 
         # get visual degrees for each point
         estimator = PositionEstimator(curr_map, horizontal_fov = 44.0, vertical_fov = 27.333, view_width=1280.0, view_height=720.0)
-        x, y, heading, confidence = estimator.get_coords_and_heading (located_objects,  41.75)
+        x, y, heading, confidence, basis = estimator.get_coords_and_heading (located_objects,  41.75)
 
         self.assertIsNone(x)
         self.assertIsNone(y)
@@ -461,7 +461,7 @@ class TestPositionEstimator(unittest.TestCase):
         max_retries = 8
         found_solution = False
         for r in range(max_retries):
-            x, y, heading, confidence = estimator.get_coords_and_heading (located_objects,  41.75)
+            x, y, heading, confidence, basis = estimator.get_coords_and_heading (located_objects,  41.75)
             if x is not None:
                 found_solution = True
                 # actual coordinates are 31, -221 with heading of around 11

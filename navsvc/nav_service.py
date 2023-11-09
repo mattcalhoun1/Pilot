@@ -4,6 +4,7 @@ from datetime import datetime
 import logging
 from lidar.lidar_map import LidarMap
 import json
+from navsvc.nav_json_encoder import NavJsonEncoder
 
 class NavService ():
     def __init__(self, base_url):
@@ -57,20 +58,26 @@ class NavService ():
         
         return resp.json()
     
-    def log_position_and_heading (self, vehicle_id, session_id, map_id, x, y, heading):
+    def log_position_and_heading (self, vehicle_id, session_id, map_id, x, y, heading, basis):
         curr_time = datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+        position_data={
+            "session_id": session_id,
+            "occurred" : curr_time,
+            "vehicle_id": vehicle_id,
+            "created" : curr_time,
+            "position_x" : x,
+            "position_y" : y,
+            "navmap_id" : map_id,
+            "heading": heading,
+            "basis": basis
+        }
+        post_data = json.dumps(position_data, cls=NavJsonEncoder)
+        logging.getLogger(__name__).info(f"Posting: {post_data}")
+
         resp = requests.post(
             self.__get_url('position_log', [vehicle_id, session_id]),
-            json={
-                "session_id": session_id,
-                "occurred" : curr_time,
-                "vehicle_id": vehicle_id,
-                "created" : curr_time,
-                "position_x" : x,
-                "position_y" : y,
-                "navmap_id" : map_id,
-                "heading": heading
-            }
+            data=post_data,
+            headers={'content-type': 'application/json'}
         )
         resp.raise_for_status()
         return resp.json()

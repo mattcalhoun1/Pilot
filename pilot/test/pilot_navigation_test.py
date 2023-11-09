@@ -34,7 +34,7 @@ class TestPilotNavigation(unittest.TestCase):
         # Get position multiple times
         for attempt in range(num_samples):
             # a sample given only two points with only visual data
-            x, y, heading, confidence = nav.get_coords_and_heading_for_landmarks (combined_landmarks, allow_lidar = False)
+            x, y, heading, confidence, basis = nav.get_coords_and_heading_for_landmarks (combined_landmarks, allow_lidar = False)
             if x is not None and y is not None:
                 x_vals.append(x)
                 y_vals.append(y)
@@ -53,7 +53,7 @@ class TestPilotNavigation(unittest.TestCase):
         # Get position multiple times
         for attempt in range(num_samples):
             # a sample given only two points with only visual data
-            x, y, heading, confidence = nav.get_coords_and_heading_for_landmarks (combined_landmarks, allow_lidar = True, lidar_map = lidar_map)
+            x, y, heading, confidence, basis = nav.get_coords_and_heading_for_landmarks (combined_landmarks, allow_lidar = True, lidar_map = lidar_map)
             if x is not None and y is not None:
                 x_vals.append(x)
                 y_vals.append(y)

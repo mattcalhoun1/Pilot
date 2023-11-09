@@ -544,7 +544,7 @@ class PositionEstimator:
         return allowed_heading_variance
     
     # gets estimated coordinates and heading, given located objects and altitude
-    # returns x,y,heading
+    # returns x,y,heading,basis
     # heading of 0 means vehicle is pointed north on the axis.
     # + heading means it's pointed to the right of north
     # - heading means it's pointed to the left of north
@@ -586,7 +586,13 @@ class PositionEstimator:
 
             heading = self.get_heading(centroid_x, centroid_y, angles)
 
-        return centroid_x, centroid_y, heading, conf
+        basis = {
+            'angles':angles,
+            'distances':distances,
+            'landmarks':located_objects
+        }
+
+        return centroid_x, centroid_y, heading, conf, basis
 
     def get_possible_coords_isolated (self, landmark_id, other_landmark_id, distances, view_angles, estimator_mode, filter_out_of_bounds, allowed_variance, allowed_heading_variance):
         # this is the angle of the other landmark id relative to this one.

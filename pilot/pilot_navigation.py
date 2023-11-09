@@ -55,7 +55,7 @@ class PilotNavigation:
         self.__min_object_confidence = 0.25 if 'MinObjectConfidence' not in self.__config else self.__config['MinObjectConfidence']
         
         self.__save_images = True
-        self.__newest_images = {} # one per camera, these are just hte image locations
+        self.__newest_images = {} # one per camera, these are just the image locations
 
         # keep copy of last known coords
         self.__last_x = None
@@ -309,6 +309,7 @@ class PilotNavigation:
         y = None
         heading = None
         confidence = Confidence.CONFIDENCE_LOW
+        basis = None
         
         while confidence < Confidence.CONFIDENCE_MEDIUM and successes < self.__min_location_success and attempts < self.__max_location_attempts:
             if attempts > 0:
@@ -346,7 +347,7 @@ class PilotNavigation:
                     num_repositions_used += 1
                 elif len(combined_landmarks) >= min_num_landmarks:
                     logging.getLogger(__name__).info(f"Combined Landmarks: {combined_landmarks}")
-                    x, y, heading, confidence = self.get_coords_and_heading_for_landmarks (combined_landmarks=combined_landmarks, allow_lidar = True)
+                    x, y, heading, confidence, basis = self.get_coords_and_heading_for_landmarks (combined_landmarks=combined_landmarks, allow_lidar = True)
                     logging.getLogger(__name__).info(f"=== Coords: ({x} , {y})  Heading: {heading}, Confidence: {confidence}, Successes: {successes} ===")
                     if x is not None and y is not None and heading is not None and confidence is not None and confidence >= self.__min_location_confidence:
                         # display on vehicle, if configured
@@ -372,9 +373,9 @@ class PilotNavigation:
                             'camera_id':c.split('_')[0],
                             'camera_heading':c.split('_')[1]
                         })
-                    self.__pilot_logger.log_coordinates_and_images(map_id = self.__map_id, x = x, y = y, heading = heading, images=views)
+                    self.__pilot_logger.log_coordinates_and_images(map_id = self.__map_id, x = x, y = y, heading = heading, images=views, basis=basis)
                 else:
-                    self.__pilot_logger.log_coordinates(map_id = self.__map_id, x = x, y = y, heading = heading)
+                    self.__pilot_logger.log_coordinates(map_id = self.__map_id, x = x, y = y, heading = heading, basis=basis)
             
             self.__last_x = x
             self.__last_y = y
@@ -434,12 +435,12 @@ class PilotNavigation:
         filtered_landmarks = self.__select_top_landmarks (combined_landmarks, max_landmarks = 3)
         #logging.getLogger(__name__).info(f"*** Filtered Landmarks: {filtered_landmarks}")
 
-        x, y, heading, confidence = self.__position_est[[*self.__position_est.keys()][0]].get_coords_and_heading(
+        x, y, heading, confidence, basis = self.__position_est[[*self.__position_est.keys()][0]].get_coords_and_heading(
             located_objects=filtered_landmarks,
             view_altitude=self.get_altitude(), # on the tank, on the floor
             lidar_map=lidar_map
         )
-        return x, y, heading, confidence
+        return x, y, heading, confidence, basis
     
     def get_last_coords_and_heading (self):
         return self.__last_x, self.__last_y, self.__last_heading, self.__last_confidence, self.__last_coord_time

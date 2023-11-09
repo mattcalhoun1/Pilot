@@ -4,7 +4,7 @@ import logging
 import time
 
 if __name__ == '__main__':
-    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)    
+    logging.basicConfig(format='%(asctime)s [%(levelname)s] %(module)s:%(message)s', level=logging.INFO)
     
     p = Pilot('/home/matt/projects/NavConfig/pilot_settings.json', vehicle=Tank())
     #p.download_resources(use_cached_maps = True, use_cached_models = True)
