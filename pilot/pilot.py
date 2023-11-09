@@ -8,9 +8,9 @@ from pilot.actions.action_factory import ActionFactory
 from planner.assignment import *
 
 class Pilot:
-    def __init__(self, config_file, vehicle, use_cached_maps = True, use_cached_models = True):
+    def __init__(self, config_file, vehicle, use_cached_maps = True, use_cached_models = True, session_id = None):
         self.__resources = PilotResources(config_file)
-        self.__pilot_logger = PilotLogger(config_file)
+        self.__pilot_logger = PilotLogger(config_file, session_id)
         self.__resources.download_resources(use_cached_maps=use_cached_maps, use_cached_models=use_cached_models)
         self.__running = True
         self.__vehicle = vehicle
@@ -29,7 +29,7 @@ class Pilot:
 
     def __requires_location (self, assignment):
         for s in assignment['assignment']['steps']:
-            if s['command'] in [TaskType.Go, TaskType.LogPosition, TaskType.Face, TaskType.Search]:
+            if s['command'] in [TaskType.Go, TaskType.Face, TaskType.Search]:
                 return True
         return False
 

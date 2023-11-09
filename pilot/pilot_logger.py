@@ -4,12 +4,12 @@ import logging
 import json
 
 class PilotLogger:
-    def __init__(self, config_file):
+    def __init__(self, config_file, session_id = None):
         self.__load_config(config_file)
         self.__vehicle_id = self.__config['Vehicle']
         
         # for now, session is just current date
-        self.__session_id = datetime.now().strftime('%Y-%m-%d')
+        self.__session_id = session_id if session_id is not None else datetime.now().strftime('%Y-%m-%d')
         self.__nav_svc = None
     
     def log_lidar (self, lidar_map):
