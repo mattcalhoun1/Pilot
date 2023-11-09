@@ -72,7 +72,6 @@ class NavService ():
             "basis": basis
         }
         post_data = json.dumps(position_data, cls=NavJsonEncoder)
-        logging.getLogger(__name__).info(f"Posting: {post_data}")
 
         resp = requests.post(
             self.__get_url('position_log', [vehicle_id, session_id]),
