@@ -14,7 +14,7 @@ if __name__ == '__main__':
     
 
     vehicle = Observer()
-    p = Pilot('/home/matt/projects/NavConfig/pi_cm4/pilot_settings.json', vehicle=vehicle, session_id=session_id)
+    p = Pilot('/home/matt/projects/NavConfig/jetson_nano/pilot_settings.json', vehicle=vehicle, session_id=session_id)
     
     last_position_log = 0
     default_map = 'basement'
