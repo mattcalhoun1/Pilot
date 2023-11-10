@@ -18,7 +18,7 @@ class EmitterLandmarkFinder (LandmarkFinder) :
 
     def extract_landmarks_from_locations (self, object_locations, id_filter = ['light'], confidence_threshold = None):
         emitter_locations = []
-        #logging.getLogger(__name__).debug(f"Full object locations: {object_locations}")
+        #logging.getLogger(__name__).info(f"Full object locations: {object_locations}")
         for obj in object_locations:
             if id_filter is None or obj['object'] in id_filter:
                 x1 = obj['x_min']
