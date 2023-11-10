@@ -11,7 +11,7 @@ import statistics
 import logging
 
 class PositionEstimator:
-    def __init__(self, field_map : FieldMap, horizontal_fov, vertical_fov, view_width, view_height, base_front=90.0, use_multithreading=True, estimator_mode = EstimatorMode.VERY_PRECISE):
+    def __init__(self, field_map : FieldMap, horizontal_fov, vertical_fov, view_width, view_height, base_front=90.0, use_multithreading=True, estimator_mode = EstimatorMode.VERY_PRECISE, max_lidar_drift_deg = 1.5, max_lidar_visual_variance_pct = 0.33):
         self.__field_map = field_map
         self.__visual_dist_calc = VisualDistanceCalculator(horizontal_fov = horizontal_fov, vertical_fov = vertical_fov, view_width=view_width, view_height=view_height)
         self.__visual_degrees_calc = VisualDegreesCalculator(horizontal_fov = horizontal_fov, vertical_fov = vertical_fov, view_width=view_width, view_height=view_height)
@@ -22,6 +22,8 @@ class PositionEstimator:
         self.__base_front = base_front
         self.__use_multithreading = use_multithreading
         self.__estimator_mode = estimator_mode
+        self.__max_lidar_drift = max_lidar_drift_deg
+        self.__max_lidar_visual_variance = max_lidar_visual_variance_pct
 
         self.__log_configuration()
 
@@ -190,11 +192,10 @@ class PositionEstimator:
                 # now convert to lidar heading, where 0 is front, 270 is left
                 lidar_rel_heading = obj_veh_relative_heading if obj_veh_relative_heading > 0 else (360 + obj_veh_relative_heading)
 
-                logging.getLogger(__name__).debug(f"Checking lidar for {landmark_id} at {obj_veh_relative_heading} degrees (lidar heading: {lidar_rel_heading})")
-                lidar_reading = lidar_map.get_measurement (lidar_rel_heading, max_allowed_drift = 1.5)
-                max_dist_variance = 0.33 # how different can lidar be before we discard it
+                logging.getLogger(__name__).info(f"Checking lidar for {landmark_id} at {obj_veh_relative_heading} degrees (lidar heading: {lidar_rel_heading})")
+                lidar_reading = lidar_map.get_measurement (lidar_rel_heading, max_allowed_drift = self.__max_lidar_drift)
                 lidar_reading_in = self.__mm_to_in(lidar_reading)
-                if lidar_reading > 0 and abs(lidar_reading_in - distances[landmark_id]['ground'])/lidar_reading_in <= max_dist_variance:
+                if lidar_reading > 0 and abs(lidar_reading_in - distances[landmark_id]['ground'])/lidar_reading_in <= self.__max_lidar_visual_variance:
                     logging.getLogger(__name__).info(f"Substituting Lidar reading of {lidar_reading_in} in place of visual estimate of {distances[landmark_id]['ground']}.")
                     distances[landmark_id]['visual_ground'] = distances[landmark_id]['ground']
                     distances[landmark_id]['lidar'] = lidar_reading_in

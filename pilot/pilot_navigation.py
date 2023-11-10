@@ -35,6 +35,7 @@ class PilotNavigation:
         self.__vehicle = vehicle
 
         self.__lidar_enabled_positioning = self.__config['LidarEnabledPositioning']
+        self.__smoothing_cycles_per_image = self.__config['SmoothingCyclesPerImage']
         self.__lidar_map = None
         self.__lidar_time = 0
         self.__lidar_max_age = 600 # max seconds old lidar data can be. As long as the vehicle doesn't move the lidar should be good indefinitely, as long as objects don't move around it
@@ -54,7 +55,9 @@ class PilotNavigation:
         self.__min_location_confidence = Confidence.CONFIDENCE_LOW # minimum location confidence before it can be considered valid
         self.__min_object_confidence = 0.25 if 'MinObjectConfidence' not in self.__config else self.__config['MinObjectConfidence']
         
-        self.__save_images = True
+        self.__save_images = self.__config['SavePositioningImages']
+        self.__save_empty_images = self.__config['SaveEmptyPositioningImages']
+
         self.__newest_images = {} # one per camera, these are just the image locations
 
         # keep copy of last known coords
@@ -114,7 +117,9 @@ class PilotNavigation:
                 view_height=CameraInfo.get_resolution_height(config_id=self.__enabled_cameras[c]),
                 base_front=90.0,
                 use_multithreading=self.__config['MultithreadedPositioning'],
-                estimator_mode = PilotNavigation.__get_estimator_mode(self.__estimator_mode)
+                estimator_mode = PilotNavigation.__get_estimator_mode(self.__estimator_mode),
+                max_lidar_drift_deg = self.__config['LidarMaxDriftDegrees'],
+                max_lidar_visual_variance_pct = self.__config['LidarMaxVisualDistVariancePct']
             )        
 
     def __get_estimator_mode (estimator_mode_str):
@@ -199,7 +204,7 @@ class PilotNavigation:
             try:
                 # go through location cycle multiple times so smoothing can work
                 c_located_objects = None
-                for locate_cycle in range(3):
+                for locate_cycle in range(self.__smoothing_cycles_per_image):
                     c_located_objects = self.__locator.find_objects_on_camera(camera=self.__get_camera(c), min_confidence = self.__min_object_confidence)
                     logging.getLogger(__name__).debug(f"Camera {c} found {len(c_located_objects)} objects: {c_located_objects}")
                     located_landmarks[c] = {}
@@ -222,16 +227,18 @@ class PilotNavigation:
                     self.__vehicle.display_objects (obj_dist_map = distances, wait_for_result = True)
 
                 if self.__save_images:
-                    # save the image with bound boxes for inspection. the distance calculation can be slow!
-                    latest_img = self.__locator.get_latest_image()
-                    image_file = f"{self.__config['CacheLocations']['Images']}/coordinates_cam_{c}_{round(self.__camera_headings[c])}.png"
-                    LandmarkLabeler().export_labeled_image(
-                        image = latest_img,
-                        landmarks=located_landmarks[c],
-                        distances=distances,
-                        angles=angles,
-                        file_name=image_file)
-                    self.__newest_images[f"{c}_{round(self.__camera_headings[c])}"] = image_file
+                    # save any images where landmarks were spotted, or all images if configured
+                    if len(located_landmarks[c]) > 0 or self.__save_empty_images:
+                        # save the image with bound boxes for inspection. the distance calculation can be slow!
+                        latest_img = self.__locator.get_latest_image()
+                        image_file = f"{self.__config['CacheLocations']['Images']}/coordinates_cam_{c}_{round(self.__camera_headings[c])}.png"
+                        LandmarkLabeler().export_labeled_image(
+                            image = latest_img,
+                            landmarks=located_landmarks[c],
+                            distances=distances,
+                            angles=angles,
+                            file_name=image_file)
+                        self.__newest_images[f"{c}_{round(self.__camera_headings[c])}"] = image_file
             except Exception as e:
                 logging.getLogger(__name__).warning(f"Locate landmarks failed. Possibly camera glitch: {e}")
         

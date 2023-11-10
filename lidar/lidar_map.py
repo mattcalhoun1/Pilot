@@ -24,7 +24,7 @@ class LidarMap:
         # find the closest available
         closest_available = self.get_closest_available_angle(vehicle_relative_angle)
 
-        #logging.getLogger(__name__).info(f"Closest available to {vehicle_relative_angle} is {closest_available}")
+        logging.getLogger(__name__).info(f"Closest available to {vehicle_relative_angle} is {closest_available}")
 
         # if it's close enough 0 or 360, also check the opposite
         if vehicle_relative_angle - max_allowed_drift < 0:
