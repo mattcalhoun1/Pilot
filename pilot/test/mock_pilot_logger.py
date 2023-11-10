@@ -10,7 +10,7 @@ class MockPilotLogger (PilotLogger):
     def log_coordinates (self, map_id, x, y, heading):
         return None
 
-    def log_coordinates_and_images (self, map_id, x, y, heading, images):
+    def log_coordinates_and_images (self, map_id, x, y, heading, images, basis):
         pass
 
     def log_search_hit (self, map_id, object_type, est_visual_distance, est_lidar_dist, 

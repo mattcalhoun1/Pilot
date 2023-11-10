@@ -18,7 +18,7 @@ class EmitterLandmarkFinder (LandmarkFinder) :
 
     def extract_landmarks_from_locations (self, object_locations, id_filter = ['light'], confidence_threshold = None):
         emitter_locations = []
-        logging.getLogger(__name__).debug(f"Full object locations: {object_locations}")
+        #logging.getLogger(__name__).debug(f"Full object locations: {object_locations}")
         for obj in object_locations:
             if id_filter is None or obj['object'] in id_filter:
                 x1 = obj['x_min']
@@ -170,6 +170,7 @@ class EmitterLandmarkFinder (LandmarkFinder) :
                     if this_key not in matched_groups:
                         s2_pairs = self.__get_potential_pairs(s2, matched_groups + [this_key,]) # filter already matched groups, plus the first comparison set
                         for s2_pair in s2_pairs:
+                            #logging.getLogger(__name__).info(f"Checking for squarage between {s2_pair.get_group_center()} and {s1_pair.get_group_center()}")
                             if self.__are_vertically_aligned (s1_pair, s2_pair, vertical_leeway, max_height_diff_pct, max_horz_dist_pct):
                                 matched_groups.append(this_key)
                                 matched_groups.append(self.__get_group_key(s2))

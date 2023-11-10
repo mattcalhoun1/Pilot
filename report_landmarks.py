@@ -21,7 +21,7 @@ if __name__ == '__main__':
     pilot_resources = PilotResources(pilot_settings_file)
 
     # set the default map
-    map_id = 'basement'
+    map_id = 'basement_v2'
     pilot_resources.download_map (map_id=map_id, use_cached_maps = True, use_cached_models = True)
     pilot_nav = PilotNavigation(
         pilot_resources = pilot_resources, 
