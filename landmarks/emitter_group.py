@@ -6,7 +6,8 @@ import statistics
 class EmitterGroupPattern:
     VERTICAL_LINE = 0
     SQUARE = 1
-    SIDEWAYS_TRIANGLE = 2
+    SIDEWAYS_TRIANGLE_LEFT = 2
+    SIDEWAYS_TRIANGLE_RIGHT = 3
 
 class EmitterGroup:
     def __init__(self):
@@ -66,11 +67,12 @@ class EmitterGroup:
             center_x_last, center_y_last = self.__emitters[-1].get_center()
             center_x = min(center_x1, center_x2) + int(abs(center_x1 - center_x2)/2)
             center_y = statistics.mean([center_y1, center_y2]) + (self.get_height()/2)
-        elif self.__pattern == EmitterGroupPattern.SIDEWAYS_TRIANGLE:
+        elif self.__pattern in [EmitterGroupPattern.SIDEWAYS_TRIANGLE_LEFT, EmitterGroupPattern.SIDEWAYS_TRIANGLE_RIGHT]:
             center_x1, center_y1 = self.__emitters[0].get_center()
-            center_x2, center_y2 = self.__emitters[1].get_center()
+            #center_x2, center_y2 = self.__emitters[1].get_center()
             center_x_last, center_y_last = self.__emitters[-1].get_center()
-            center_x = min(center_x1, center_x2) + int(abs(center_x1 - center_x2)/2)
+            #center_x = min(center_x1, center_x2) + int(abs(center_x1 - center_x2)/2)
+            center_x = min(center_x1, center_x_last) + int(abs(center_x1 - center_x_last)/2)
             center_y = statistics.mean([center_y1, center_y_last])
             
             
@@ -80,7 +82,7 @@ class EmitterGroup:
         return self.__emitters
     
     def get_height (self):
-        if self.__pattern == EmitterGroupPattern.VERTICAL_LINE or self.__pattern == EmitterGroupPattern.SIDEWAYS_TRIANGLE:
+        if self.__pattern in [EmitterGroupPattern.VERTICAL_LINE, EmitterGroupPattern.SIDEWAYS_TRIANGLE_LEFT, EmitterGroupPattern.SIDEWAYS_TRIANGLE_RIGHT]:
             top_center_x, top_center_y = self.__emitters[0].get_center()
             bottom_center_x, bottom_center_y = self.__emitters[-1].get_center()
             return abs(bottom_center_y - top_center_y)

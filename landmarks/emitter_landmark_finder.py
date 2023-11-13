@@ -207,7 +207,7 @@ class EmitterLandmarkFinder (LandmarkFinder) :
                                         matched_groups.append(this_key)
                                             
                                         # Add the loner point to the group, and change its type to triangle
-                                        s1_pair.set_pattern(EmitterGroupPattern.SIDEWAYS_TRIANGLE)
+                                        s1_pair.set_pattern(self.__get_triangle_type (s1_pair, e))
                                         s1_pair.add_emitter(e)
                                         self.__set_emitters_as_matched(s1_pair, matched_emitter_keys)
                                         triangles.append(s1_pair)
@@ -244,6 +244,16 @@ class EmitterLandmarkFinder (LandmarkFinder) :
             if (abs(g_center_x - e_center_x) / self.get_image_resolution().get_width()) <= max_horz_dist_pct:
                 return True
         return False
+    
+    # returns left or right type, depending on where the loner point is
+    def __get_triangle_type (self, group, emitter):
+        g_center_x, g_center_y = group.get_group_center()
+        e_center_x, e_center_y = emitter.get_center()
+
+        if e_center_x < g_center_x:
+            return EmitterGroupPattern.SIDEWAYS_TRIANGLE_LEFT
+
+        return EmitterGroupPattern.SIDEWAYS_TRIANGLE_RIGHT
         
     def __are_vertically_aligned (self, group_1, group_2, vertical_leeway, max_height_diff_pct, max_horz_dist_pct):
         g1_center_x, g1_center_y = group_1.get_group_center()
@@ -262,8 +272,10 @@ class EmitterLandmarkFinder (LandmarkFinder) :
             pattern = str(len(emitter_group.get_emitters()))
             if emitter_group.get_pattern() == EmitterGroupPattern.SQUARE:
                 pattern = 'square'
-            elif emitter_group.get_pattern() == EmitterGroupPattern.SIDEWAYS_TRIANGLE:
-                pattern = 'sideways_triangle'
+            elif emitter_group.get_pattern() == EmitterGroupPattern.SIDEWAYS_TRIANGLE_LEFT:
+                pattern = 'sideways_triangle_left'
+            elif emitter_group.get_pattern() == EmitterGroupPattern.SIDEWAYS_TRIANGLE_RIGHT:
+                pattern = 'sideways_triangle_right'
                 
             cached_id = self.get_field_map().get_landmark_by_model_type_pattern (
                 self.__emitter_model,

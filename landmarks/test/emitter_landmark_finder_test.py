@@ -37,7 +37,7 @@ class TestEmitterLandmarkFinder(unittest.TestCase):
                     'confidence':0.3
                 },
                 'n_triangle': {
-                    'pattern':'sideways_triangle',
+                    'pattern':'sideways_triangle_left',
                     'type':'light',
                     'model':'lights',
                     'x':26,
