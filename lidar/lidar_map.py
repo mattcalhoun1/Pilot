@@ -11,10 +11,14 @@ class LidarMap:
                 adjustedAngle = (i * granularity) + offset
                 if adjustedAngle > 360.0:
                     adjustedAngle -= 360.0
+
                 self.__measurement_map[adjustedAngle] = measurement
         
         self.__available_angles = sorted(self.__measurement_map.keys())
         #logging.getLogger(__name__).info(f"Available angles: {self.__available_angles}")
+
+    def get_available_angles (self):
+        return self.__available_angles
 
     def get_lidar_data (self):
         return self.__measurement_map

@@ -86,7 +86,7 @@ class NavService ():
         
         lidar_json = {}
         lidar_data = lidar_map.get_lidar_data()
-        for angle in lidar_data:
+        for angle in lidar_map.get_available_angles():
             lidar_json[str(angle)] = lidar_data[angle]
         
         resp = requests.post(

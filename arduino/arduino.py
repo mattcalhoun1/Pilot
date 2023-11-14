@@ -41,21 +41,30 @@ class Arduino:
         hasmsg = self.__serial.in_waiting > 0
         return hasmsg
     
-    def get_message (self):
+    def get_message (self, timeout = 10.0):
         # read bytes until we hit a carriage return or newline
         complete_message = False
         message_buffer = ""
-        while complete_message == False:
-            next_byte = self.__serial.read()
-            try:
-                next_str = next_byte.decode('utf-8')
-                if next_str == '\n' or next_str == '\r' or next_str == '\0' or next_str == '\x00':
-                    complete_message = True
-                else:
-                    message_buffer += next_str
-            except Exception as e:
-                print(f"Exception reading serial port: {e}")
+        start_time = time.time()
+        while complete_message == False and (time.time() - start_time <= timeout):
+            if self.__serial.in_waiting > 0:
+                next_byte = self.__serial.read()
+                try:
+                    next_str = next_byte.decode('utf-8')
+                    if next_str == '\n' or next_str == '\r':
+                        complete_message = True
+                    elif next_str == '\0' or next_str == '\x00':
+                        # ignore these characters, they may be c string terminators, but we dont care about those
+                        pass
+                    else:
+                        message_buffer += next_str
+                except Exception as e:
+                    print(f"Exception reading serial port: {e}")
+            else:
+                # wait for more bytes
+                time.sleep(0.05)
 
+        #logging.getLogger(__name__).info(f"Arduino: [{message_buffer}]")
         return message_buffer.rstrip()
     
     def send_message (self, message):

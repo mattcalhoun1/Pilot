@@ -1,4 +1,4 @@
-from arduino.observer import Observer
+from arduino.meccar import MecCar
 from arduino.arduino_constants import ArduinoConstants
 from lidar.lidar_map import LidarMap
 import time
@@ -6,7 +6,7 @@ import logging
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
-    vehicle = Observer()
+    vehicle = MecCar()
 
     if vehicle.wait_for_ready() and vehicle.get_all_configurations():
         print(f"Connected.")
