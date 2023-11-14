@@ -38,7 +38,7 @@ class PilotNavigation:
         self.__smoothing_cycles_per_image = self.__config['SmoothingCyclesPerImage']
         self.__lidar_map = None
         self.__lidar_time = 0
-        self.__lidar_max_age = 600 # max seconds old lidar data can be. As long as the vehicle doesn't move the lidar should be good indefinitely, as long as objects don't move around it
+        self.__lidar_max_age = self.__config['LidarMaxAge'] # max seconds old lidar data can be. As long as the vehicle doesn't move the lidar should be good indefinitely, as long as objects don't move around it
 
         self.__locator = TFLiteObjectLocator(model_configs = pilot_resources.get_model_configs())
         self.__estimator_mode = PilotNavigation.__get_estimator_mode(self.__config['EstimatorMode'])
