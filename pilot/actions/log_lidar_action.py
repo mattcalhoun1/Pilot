@@ -20,6 +20,9 @@ class LogLidarAction(ActionBase):
     def log_lidar (self):
         # get live lidar from the vehicvle
         if self.__vehicle.wait_for_ready() and self.__vehicle.get_all_configurations():
+            # invalidate any cache
+            self.__pilot_nav.invalidate_position()
+            
             lidar_map = self.__vehicle.get_live_lidar_map(timeout=10.0)
             if lidar_map is not None:
                 return self.__pilot_logger.log_lidar(lidar_map)
