@@ -202,6 +202,7 @@ class PositionEstimator:
                     distances[landmark_id]['ground'] = lidar_reading_in
                     distances[landmark_id]['islidar'] = True
 
+
         return distances
     
 
