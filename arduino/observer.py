@@ -128,11 +128,11 @@ class Observer(Arduino):
             logging.getLogger(__name__).info(f"Arduino:{msg}")
 
 
-    def get_live_lidar_map (self, timeout = 10):
+    def get_live_lidar_map (self, max_lidar_age_millis = 6000, timeout = 10):
         if self.__streaming_lidar:
             return self.__last_lidar
         else:
-            self.send_message(f"Map:none")
+            self.send_message(f"Map:{max_lidar_age_millis}")
             start = time.time()
             if self.wait_for_result(timeout):
                 while (time.time() - start <= timeout):
@@ -147,8 +147,8 @@ class Observer(Arduino):
                     time.sleep(0.25)
             return None
 
-    def get_lidar_map (self, wait_for_result = False):
-        self.send_message(f"Map:none")
+    def get_lidar_map (self, max_lidar_age_millis = 6000, wait_for_result = False):
+        self.send_message(f"Map:{max_lidar_age_millis}")
         return wait_for_result == False or self.wait_for_result(10)
 
     def rotate (self, degrees : float, wait_for_result = False):
