@@ -9,7 +9,7 @@ class CV2Camera (Camera):
 
     def __init__(self, high_res = False, flipped = True, default_focus_distance = 5, auto_optimize = True, auto_optimize_object_locator = None, sensor_id = 0):
         self.__sensor_id = sensor_id
-        self.__res_w = 1640 if high_res == True else 1920
+        self.__res_w =  1640 if high_res == True else 1920
         self.__res_h = 1232 if high_res == True else 1080
         self.__frame_rate = 10
         self.__flipped = flipped
@@ -30,7 +30,23 @@ class CV2Camera (Camera):
 
     # no additional processing necessary
     def preprocess_image (self, image):
-        return image
+        
+        # crop 100px off each side
+        #y = 0
+        #x = 100
+        #h, w, d = image.shape
+        
+        # crop edges
+        #crop_img = image[y:y+h, x:x+w]        
+        
+        # sharpen
+        # Create a filter matrix
+        kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
+        
+        # Apply the filter matrix to the image
+        sharpened = cv2.filter2D(image, -1, kernel)        
+        
+        return sharpened
 
     # captures an image buffer
     def capture_image (self):

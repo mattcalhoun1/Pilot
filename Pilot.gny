@@ -28,9 +28,12 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=1
-FILE_NAME_0=669;Python;0;EUTF-8;0;1;0;%2Fhome%2Fmatt%2Fprojects%2FPilot%2Fpilot%2Fpilot.py;0;4
+current_page=2
+FILE_NAME_0=1305;Python;0;EUTF-8;0;1;0;%2Fhome%2Fmatt%2Fprojects%2FPilot%2Fpilot%2Fpilot.py;0;4
 FILE_NAME_1=944;Python;0;EUTF-8;0;1;0;%2Fhome%2Fmatt%2Fprojects%2FPilot%2Fpilot%2Fpilot_navigation.py;0;4
+FILE_NAME_2=7094;Python;0;EUTF-8;0;1;0;%2Fhome%2Fmatt%2Fprojects%2FPilot%2Farduino%2Fobserver.py;0;4
+FILE_NAME_3=6340;Python;0;EUTF-8;0;1;0;%2Fhome%2Fmatt%2Fprojects%2FPilot%2Farduino%2Fmeccar.py;0;4
+FILE_NAME_4=643;Python;0;EUTF-8;0;1;0;%2Fhome%2Fmatt%2Fprojects%2FPilot%2Flidar%2Flidar_map.py;0;4
 
 [VTE]
 last_dir=/home/matt

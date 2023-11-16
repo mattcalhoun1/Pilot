@@ -38,7 +38,7 @@ class CameraInfo:
             'FLIPPED':True,
             'DEFAULT_FOCUS':5,
             'AUTO_OPTIMIZE':True,
-            'IMAGE_RESOLUTION':ImageResolution(1920.0,1080.0)
+            'IMAGE_RESOLUTION':ImageResolution(1640.0,1232.0)
         },
 
         'xPI2_STD_HQ_CROPPED_0': {
@@ -61,7 +61,7 @@ class CameraInfo:
             'FLIPPED':True,
             'DEFAULT_FOCUS':5,
             'AUTO_OPTIMIZE':True,
-            'IMAGE_RESOLUTION':ImageResolution(1640.0,1232.0)
+            'IMAGE_RESOLUTION':ImageResolution(1280.0,720.0)
         },
         'XX_PI2_STD_HQ_CROPPED_0': {
             'SENSOR_ID':0,
