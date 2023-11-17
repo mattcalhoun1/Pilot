@@ -442,7 +442,7 @@ class PilotNavigation:
             lidar_map = None
 
         #logging.getLogger(__name__).info(f"*** Unfiltered Landmarks: {combined_landmarks}")
-        filtered_landmarks = self.__select_top_landmarks (combined_landmarks, max_landmarks = 3)
+        filtered_landmarks = self.__select_top_landmarks (combined_landmarks, max_landmarks = 4)
         #logging.getLogger(__name__).info(f"*** Filtered Landmarks: {filtered_landmarks}")
 
         x, y, heading, confidence, basis = self.__position_est[[*self.__position_est.keys()][0]].get_coords_and_heading(
