@@ -11,6 +11,10 @@ class PositionEstimatorWithClustering (PositionEstimator):
     def __init__(self, field_map : FieldMap, horizontal_fov, vertical_fov, view_width, view_height, base_front=90.0, use_multithreading = True, estimator_mode = EstimatorMode.VERY_PRECISE, max_lidar_drift_deg = 1.5, max_lidar_visual_variance_pct = 0.33):
         PositionEstimator.__init__(self, field_map, horizontal_fov, vertical_fov, view_width, view_height, base_front, use_multithreading, estimator_mode, max_lidar_drift_deg, max_lidar_visual_variance_pct)
         logging.getLogger(__name__).info("Position Clustering is enabled, for greater accuracy.")
+        self.__default_heading_clusters = 2
+        self.__heading_std_dev = 2
+        self.__default_coord_clusters = 2
+        self.__coord_std_dev = 2
 
     def get_possible_headings (self, x, y, view_angles):
         poss = PositionEstimator.get_possible_headings(self, x, y, view_angles)
@@ -37,11 +41,11 @@ class PositionEstimatorWithClustering (PositionEstimator):
 
         #logging.getLogger(__name__).info(f"Estimated distances: {distances}")
 
-        allowed_heading_variance = 0.09
+        allowed_heading_variance = 0.07
         if estimator_mode == EstimatorMode.PRECISE:
-            allowed_heading_variance = 0.07
+            allowed_heading_variance = 0.05
         if estimator_mode == EstimatorMode.VERY_PRECISE:
-            allowed_heading_variance = 0.06
+            allowed_heading_variance = 0.03
 
         conf = Confidence.CONFIDENCE_VERY_LOW
         coords = []
@@ -72,10 +76,7 @@ class PositionEstimatorWithClustering (PositionEstimator):
         # use clustering to remove outliers if enough samples
         if len(coords) > 2:
             #logging.getLogger(__name__).info("Removing outliers")
-            poss = coords
             coords = self.__remove_coordinates_outliers(coords)
-            #logging.getLogger(__name__).info(f"Headings - Possible: {poss} , Reduced to: {coords}")
-            
             #logging.getLogger(__name__).info(f"{len(coords)} Removed outliers")
 
         # calculate the mean of whatever is left
@@ -95,13 +96,13 @@ class PositionEstimatorWithClustering (PositionEstimator):
 
         return centroid_x, centroid_y, heading, conf, basis
 
-    def __remove_heading_outliers (self, headings, std_dev_threshold = 3.0):
+    def __remove_heading_outliers (self, headings):
         cleaned_headings = []
         # only trigger clustering if there is a lot of deviation
-        if len(headings) > 2 and statistics.stdev(headings) > std_dev_threshold:
+        if len(headings) > 2 and statistics.stdev(headings) > self.__heading_std_dev:
             # try a couple of differnt cluster sizes, and if there
             # is a large disparity, leave off the outliers
-            two_clusters = self.__get_largest_headings_cluster(headings, 2)
+            two_clusters = self.__get_largest_headings_cluster(headings, self.__default_heading_clusters)
             if len(two_clusters) != len(headings):
                 cleaned_headings = two_clusters
             else:
@@ -143,7 +144,7 @@ class PositionEstimatorWithClustering (PositionEstimator):
         if len(all_coords) > 2:
             # try a couple of differnt cluster sizes, and if there
             # is a large disparity, leave off the outliers
-            two_clusters = self.__get_largest_coordinates_cluster(all_coords, 2)
+            two_clusters = self.__get_largest_coordinates_cluster(all_coords, self.__default_coord_clusters)
             if len(two_clusters) != len(all_coords):
                 cleaned_coords = two_clusters
             else:
@@ -156,7 +157,7 @@ class PositionEstimatorWithClustering (PositionEstimator):
         return cleaned_coords
         
     
-    def __get_largest_coordinates_cluster (self, all_coords, n_clusters, std_dev_threshold = 3.0):
+    def __get_largest_coordinates_cluster (self, all_coords, n_clusters):
         largest = []
         distances = []
         
@@ -165,7 +166,7 @@ class PositionEstimatorWithClustering (PositionEstimator):
             distances.append(self.get_distance(c[0],c[1],0,0))
 
         # only trigger clustering if there is a lot of deviation
-        if statistics.stdev(distances) > std_dev_threshold:
+        if statistics.stdev(distances) > self.__coord_std_dev:
             np_distances = np.array(distances).reshape(-1, 1)
             model = KMeans(n_clusters=n_clusters, random_state=0, n_init=2).fit(np_distances)
             pred = model.labels_
