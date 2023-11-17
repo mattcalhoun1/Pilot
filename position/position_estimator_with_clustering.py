@@ -14,7 +14,7 @@ class PositionEstimatorWithClustering (PositionEstimator):
 
     def get_possible_headings (self, x, y, view_angles):
         poss = PositionEstimator.get_possible_headings(self, x, y, view_angles)
-        logging.getLogger(__name__).info(f"Possible headings, before clustering cleanup: {poss}")
+        #logging.getLogger(__name__).info(f"Possible headings, before clustering cleanup: {poss}")
 
         cleaned = self.__remove_heading_outliers(poss)
         

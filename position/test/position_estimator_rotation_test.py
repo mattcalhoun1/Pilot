@@ -84,10 +84,9 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
         estimator = PositionEstimatorWithClustering(curr_map, horizontal_fov = self.__fov_horz, vertical_fov = self.__fov_vert, view_width=self.__view_width, view_height=self.__view_height)
         x, y, heading, confidence, basis = estimator.get_coords_and_heading (located_objects = located_objects,  view_altitude = 19.0, estimator_mode = EstimatorMode.FAST, lidar_map=lidar_map)
 
-        logging.getLogger(__name__).info(f"Basis: {json.dumps(basis, cls=NavJsonEncoder, indent=2)}")
+        #logging.getLogger(__name__).info(f"Basis: {json.dumps(basis, cls=NavJsonEncoder, indent=2)}")
         logging.getLogger(__name__).info(f"X:{x}, Y:{y}, Heading: {heading}, Confidence: {confidence}")
 
-        # actual coordinates are ~ (80, 200) with heading of around -180 (or +180. same thing)
         self.assertGreaterEqual(x,-15)
         self.assertLessEqual(x,15)
 
@@ -96,6 +95,310 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
 
         self.assertGreaterEqual(heading,-100)
         self.assertLessEqual(heading,-80)
+        self.assertEqual(Confidence.CONFIDENCE_MEDIUM, confidence)
+
+        logging.getLogger(__name__).info(f"FAST : ({x},{y} - Heading {heading})")
+
+    def test_heading_w_45 (self):
+        curr_map = self.get_map()
+
+        # entry 255 from Observer/LidarFix session, incorrectly reported as
+        # 7.7, 29 - -48.24 degrees
+        # actual: 0, 50, -45 degrees        
+        located_objects =  [
+            {
+                "n_light": {
+                    "id": "n_light",
+                    "x1": 740.29,
+                    "x2": 807.69,
+                    "y1": 200.21,
+                    "y2": 473.99,
+                    "time": 1700229219.4,
+                    "priority": 10,
+                    "confidence": 1.0,
+                    "camera_heading": 122.0
+                }
+                },
+                {
+                "ne_light": {
+                    "id": "ne_light",
+                    "x1": 957.85,
+                    "x2": 1019.82,
+                    "y1": 259.16,
+                    "y2": 489.92,
+                    "time": 1700229256.7,
+                    "priority": 9,
+                    "confidence": 0.93,
+                    "camera_heading": 179.0
+                }
+                },
+                {
+                "sw_light": {
+                    "id": "sw_light",
+                    "x1": 1044.83,
+                    "x2": 1092.67,
+                    "y1": 294.97,
+                    "y2": 519.19,
+                    "time": 1700229260.9,
+                    "priority": 8,
+                    "confidence": 0.81,
+                    "camera_heading": 0.0
+                }
+            }
+        ]
+
+        # Add some lidar measurements
+        #lidar_map = self.__generate_lidar({
+        #    46.5:6184.9, # cat tree
+        #    49.5:6184.9, # cat tree, manually found angle
+        #    314.25:5842.0, # corrected lidar measurement
+        #    309.25:5842.0 # manually adjusted angle, based on visual
+        #})
+        lidar_map = None
+
+        # get visual degrees for each point
+        estimator = PositionEstimatorWithClustering(curr_map, horizontal_fov = self.__fov_horz, vertical_fov = self.__fov_vert, view_width=self.__view_width, view_height=self.__view_height)
+        x, y, heading, confidence, basis = estimator.get_coords_and_heading (located_objects = located_objects,  view_altitude = 19.0, estimator_mode = EstimatorMode.FAST, lidar_map=lidar_map)
+
+        #logging.getLogger(__name__).info(f"Basis: {json.dumps(basis, cls=NavJsonEncoder, indent=2)}")
+        logging.getLogger(__name__).info(f"X:{x}, Y:{y}, Heading: {heading}, Confidence: {confidence}")
+
+        self.assertGreaterEqual(x,-15)
+        self.assertLessEqual(x,15)
+
+        self.assertGreaterEqual(y,10)
+        self.assertLessEqual(y,80)
+
+        self.assertGreaterEqual(heading,-60)
+        self.assertLessEqual(heading,-30)
+        self.assertEqual(Confidence.CONFIDENCE_MEDIUM, confidence)
+
+        logging.getLogger(__name__).info(f"FAST : ({x},{y} - Heading {heading})")
+
+    def test_heading_N (self):
+        curr_map = self.get_map()
+
+        # entry 250 from Observer/LidarFix session, incorrectly reported as
+        # -0.58, 92.8 : heading: 2.25
+        # actual: 0, 50, 0 degrees        
+        located_objects =  [
+            {
+                "se_light": {
+                    "id": "se_light",
+                    "x1": 767.02,
+                    "x2": 845.9,
+                    "y1": 287.98,
+                    "y2": 540.24,
+                    "time": 1700227185.2,
+                    "priority": 10,
+                    "confidence": 0.99,
+                    "camera_heading": 228.0
+                }
+                },
+                {
+                "se_light": {
+                    "id": "se_light",
+                    "x1": 767.02,
+                    "x2": 845.9,
+                    "y1": 287.98,
+                    "y2": 540.24,
+                    "time": 1700227185.2,
+                    "priority": 10,
+                    "confidence": 0.99,
+                    "camera_heading": 228.0
+                }
+                },
+                {
+                "ne_light": {
+                    "id": "ne_light",
+                    "x1": 1523.23,
+                    "x2": 1356.05,
+                    "y1": 239.06,
+                    "y2": 479.28,
+                    "time": 1700227128.3,
+                    "priority": 9,
+                    "confidence": 0.94,
+                    "camera_heading": 122.0
+                }
+            }
+        ]
+
+        # Add some lidar measurements
+        #lidar_map = self.__generate_lidar({
+        #    46.5:6184.9, # cat tree
+        #    49.5:6184.9, # cat tree, manually found angle
+        #    314.25:5842.0, # corrected lidar measurement
+        #    309.25:5842.0 # manually adjusted angle, based on visual
+        #})
+        lidar_map = None
+
+        # get visual degrees for each point
+        estimator = PositionEstimatorWithClustering(curr_map, horizontal_fov = self.__fov_horz, vertical_fov = self.__fov_vert, view_width=self.__view_width, view_height=self.__view_height)
+        x, y, heading, confidence, basis = estimator.get_coords_and_heading (located_objects = located_objects,  view_altitude = 19.0, estimator_mode = EstimatorMode.FAST, lidar_map=lidar_map)
+
+        #logging.getLogger(__name__).info(f"Basis: {json.dumps(basis, cls=NavJsonEncoder, indent=2)}")
+        logging.getLogger(__name__).info(f"X:{x}, Y:{y}, Heading: {heading}, Confidence: {confidence}")
+
+        self.assertGreaterEqual(x,-15)
+        self.assertLessEqual(x,15)
+
+        self.assertGreaterEqual(y,10)
+        self.assertLessEqual(y,80)
+
+        self.assertGreaterEqual(heading,-10)
+        self.assertLessEqual(heading,10)
+        self.assertEqual(Confidence.CONFIDENCE_MEDIUM, confidence)
+
+        logging.getLogger(__name__).info(f"FAST : ({x},{y} - Heading {heading})")
+
+    def test_heading_e_45 (self):
+        curr_map = self.get_map()
+
+        # entry 251 from Observer/LidarFix session, incorrectly reported as
+        # 1.42, 26.26, heading: 48.75
+        # actual: 0, 50, 45 degrees        
+        located_objects =  [
+            {
+                "ne_light": {
+                    "id": "ne_light",
+                    "x1": 109.62,
+                    "x2": 200.11,
+                    "y1": 269.99,
+                    "y2": 512.98,
+                    "time": 1700227501.2,
+                    "priority": 9,
+                    "confidence": 0.96,
+                    "camera_heading": 99.0
+                }
+                },
+                {
+                "se_light": {
+                    "id": "se_light",
+                    "x1": 793.96,
+                    "x2": 870.37,
+                    "y1": 263.88,
+                    "y2": 519.4,
+                    "time": 1700227519.9,
+                    "priority": 10,
+                    "confidence": 0.99,
+                    "camera_heading": 179.0
+                }
+                },
+                {
+                "nw_tree": {
+                    "id": "nw_tree",
+                    "x1": 360.22,
+                    "x2": 563.6,
+                    "y1": 450.17,
+                    "y2": 797.71,
+                    "time": 1700227522.9,
+                    "priority": 7,
+                    "confidence": 0.71,
+                    "camera_heading": 0.0
+                }
+            }
+        ]
+
+        # Add some lidar measurements
+        #lidar_map = self.__generate_lidar({
+        #    46.5:6184.9, # cat tree
+        #    49.5:6184.9, # cat tree, manually found angle
+        #    314.25:5842.0, # corrected lidar measurement
+        #    309.25:5842.0 # manually adjusted angle, based on visual
+        #})
+        lidar_map = None
+
+        # get visual degrees for each point
+        estimator = PositionEstimatorWithClustering(curr_map, horizontal_fov = self.__fov_horz, vertical_fov = self.__fov_vert, view_width=self.__view_width, view_height=self.__view_height)
+        x, y, heading, confidence, basis = estimator.get_coords_and_heading (located_objects = located_objects,  view_altitude = 19.0, estimator_mode = EstimatorMode.FAST, lidar_map=lidar_map)
+
+        #logging.getLogger(__name__).info(f"Basis: {json.dumps(basis, cls=NavJsonEncoder, indent=2)}")
+        logging.getLogger(__name__).info(f"X:{x}, Y:{y}, Heading: {heading}, Confidence: {confidence}")
+
+        self.assertGreaterEqual(x,-15)
+        self.assertLessEqual(x,15)
+
+        self.assertGreaterEqual(y,10)
+        self.assertLessEqual(y,80)
+
+        self.assertGreaterEqual(heading,35)
+        self.assertLessEqual(heading,55)
+        self.assertEqual(Confidence.CONFIDENCE_MEDIUM, confidence)
+
+        logging.getLogger(__name__).info(f"FAST : ({x},{y} - Heading {heading})")
+
+    def test_heading_e (self):
+        curr_map = self.get_map()
+
+        # entry 251 from Observer/LidarFix session, incorrectly reported as
+        # -0.87, 40.19 ... 86.68 degrees
+        # actual: 0, 50, 90 degrees        
+        located_objects =  [
+            {
+            "se_light": {
+                "id": "se_light",
+                "x1": 1585.48,
+                "x2": 1661.56,
+                "y1": 244.24,
+                "y2": 506.42,
+                "time": 1700227599.2,
+                "priority": 10,
+                "confidence": 0.84,
+                "camera_heading": 122.0
+            }
+            },
+            {
+            "ne_light": {
+                "id": "ne_light",
+                "x1": 362.14,
+                "x2": 664.75,
+                "y1": 397.98,
+                "y2": 629.91,
+                "time": 1700227603.5,
+                "priority": 9,
+                "confidence": 0.98,
+                "camera_heading": 56.0
+            }
+            },
+            {
+            "n_light": {
+                "id": "n_light",
+                "x1": 245.54,
+                "x2": 314.38,
+                "y1": 332.77,
+                "y2": 615.08,
+                "time": 1700227641.1,
+                "priority": 10,
+                "confidence": 1.0,
+                "camera_heading": 0.0
+            }
+            }            
+        ]
+
+        # Add some lidar measurements
+        #lidar_map = self.__generate_lidar({
+        #    46.5:6184.9, # cat tree
+        #    49.5:6184.9, # cat tree, manually found angle
+        #    314.25:5842.0, # corrected lidar measurement
+        #    309.25:5842.0 # manually adjusted angle, based on visual
+        #})
+        lidar_map = None
+
+        # get visual degrees for each point
+        estimator = PositionEstimatorWithClustering(curr_map, horizontal_fov = self.__fov_horz, vertical_fov = self.__fov_vert, view_width=self.__view_width, view_height=self.__view_height)
+        x, y, heading, confidence, basis = estimator.get_coords_and_heading (located_objects = located_objects,  view_altitude = 19.0, estimator_mode = EstimatorMode.FAST, lidar_map=lidar_map)
+
+        #logging.getLogger(__name__).info(f"Basis: {json.dumps(basis, cls=NavJsonEncoder, indent=2)}")
+        logging.getLogger(__name__).info(f"X:{x}, Y:{y}, Heading: {heading}, Confidence: {confidence}")
+
+        self.assertGreaterEqual(x,-15)
+        self.assertLessEqual(x,15)
+
+        self.assertGreaterEqual(y,10)
+        self.assertLessEqual(y,80)
+
+        self.assertGreaterEqual(heading,80)
+        self.assertLessEqual(heading,100)
         self.assertEqual(Confidence.CONFIDENCE_MEDIUM, confidence)
 
         logging.getLogger(__name__).info(f"FAST : ({x},{y} - Heading {heading})")
