@@ -1,4 +1,5 @@
 from navsvc.nav_service import NavService
+from navsvc.nav_json_encoder import NavJsonEncoder
 from datetime import datetime
 import logging
 import json
@@ -7,6 +8,8 @@ class PilotLogger:
     def __init__(self, config_file, session_id = None):
         self.__load_config(config_file)
         self.__vehicle_id = self.__config['Vehicle']
+        self.__log_position_failures = self.__config['LogPositionFailures'] if 'LogPositionFailures' in self.__config else False
+        self.__log_dir = self.__config['LogDirectory'] if 'LogDirectory' in self.__config else '/tmp'
         
         # for now, session is just current date
         self.__session_id = session_id if session_id is not None else datetime.now().strftime('%Y-%m-%d')
@@ -80,6 +83,12 @@ class PilotLogger:
             image_file = image_file,
             image_format = image_format
         )
+
+    def log_position_failure (self, map_id, basis):
+        if self.__log_position_failures and basis is not None:
+            # write json to file
+            with open(f"{self.__log_dir}/positionfail.{datetime.now().strftime('%Y%m%d_%H%M%S')}.json") as out:
+                out.write(json.dumps(basis, cls=NavJsonEncoder))
 
     def __get_nav_service (self):
         if self.__nav_svc is None:

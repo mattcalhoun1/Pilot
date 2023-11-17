@@ -402,6 +402,9 @@ class PilotNavigation:
         # clear image buffer
         self.__newest_images = {}
 
+        # log this failure, if configured
+        self.__pilot_logger.log_position_failure(map_id=self.__map_id, basis=basis)
+
         # not enough successes to report a location
         return None,None,None,None
 
