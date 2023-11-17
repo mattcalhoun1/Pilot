@@ -370,7 +370,7 @@ class PositionEstimator:
         return heading 
     
     def get_possible_headings (self, x, y, view_angles):
-        #logging.getLogger(__name__).info(f"Perspective x:{x}, y:{y}")
+        logging.getLogger(__name__).info(f"Perspective x:{x}, y:{y}")
         #logging.getLogger(__name__).info(f"Perspective x:{x}, y:{y}, View angles: {view_angles}")
         headings = []
 
@@ -419,13 +419,44 @@ class PositionEstimator:
             # If relative north is >0degrees from us, we are facing left of north (- degrees)
 
             # if our perspective is below the landmark, we need to flip the heading sign
-            if y < base_y:
-                visible_heading *= -1
+            if self.__is_heading_negative(position_x=x, landmark_x=base_x, relative_north=relative_north, visual_landmark_angle=landmark_deg_relative_to_vehicle_facing):
+                visible_heading = -1 * abs(visible_heading)
 
-            #logging.getLogger(__name__).info(f"{base_landmark_id} Vehicle heading: {visible_heading}, Landmark relative to vehicle: {landmark_deg_relative_to_vehicle_facing}")
+            if x < 15:
+                logging.getLogger(__name__).info(f"{base_landmark_id} Vehicle heading: {visible_heading}, Landmark relative to vehicle: {landmark_deg_relative_to_vehicle_facing}, relative north: {relative_north}")
             headings.append(visible_heading)
 
         return headings
+
+    def __is_heading_negative (self, position_x, landmark_x, relative_north, visual_landmark_angle):
+        if abs(relative_north) > 180 or abs(visual_landmark_angle) > 180:
+            logging.getLogger(__name__).error(f"Bad angle reading, neither of these should ever be > 180 - N:{relative_north}, V:{visual_landmark_angle}")
+
+        # if landmark is left of this position (on map)
+        if position_x > landmark_x:
+            # if landmark is visually to the right
+            if visual_landmark_angle > 0:
+                # if combined relative N and visual angle < 180. we are facing westish (negative heading)
+                if relative_north + visual_landmark_angle < 180:
+                    return True
+            elif visual_landmark_angle < 0: # landmark visually on left
+                if abs(visual_landmark_angle) < relative_north:
+                    return True
+        elif position_x < landmark_x: # landmark is to the right, mapwise
+            # if landmark is visually to the right
+            if visual_landmark_angle > 0:
+                # if we are not looking between the landmark and N
+                if visual_landmark_angle > abs(relative_north):
+                    return True
+                elif visual_landmark_angle < 0:
+                    # both visual landmark angle and relative north are < 0. If we add them
+                    # together and the total is >= -180, we are facing eastern (positive heading)
+                    # we will look for opposite situation, since this function is looking for negative heading
+                    if visual_landmark_angle + relative_north < -180:
+                        return True
+        
+        return False
+
 
     def is_possible (self, x, y, view_angles, allowed_variance = 0.2, allowed_heading_variance = 0.3):
         base_landmark_id = None

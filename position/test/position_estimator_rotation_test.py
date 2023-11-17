@@ -1,0 +1,298 @@
+import unittest
+from position.position_estimator_with_clustering import PositionEstimatorWithClustering
+from position.confidence import Confidence
+from position.estimator_mode import EstimatorMode
+from field.field_map import FieldMap
+from camera.camera_info import CameraInfo
+from lidar.lidar_map import LidarMap
+from navsvc.nav_json_encoder import NavJsonEncoder
+import logging
+import json
+import numpy as np
+
+class TestPositionEstimatorWithRotations(unittest.TestCase):
+    def setUp(self) -> None:
+        logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+        self.__camera_config_id = 'PI2_STD_HQ_CROPPED_0'
+        self.__fov_horz = CameraInfo.get_fov_horizontal(self.__camera_config_id)
+        self.__fov_vert = CameraInfo.get_fov_vertical(self.__camera_config_id)
+        self.__view_height = CameraInfo.get_resolution_height(self.__camera_config_id)
+        self.__view_width = CameraInfo.get_resolution_width(self.__camera_config_id)
+
+        return super().setUp()
+
+
+
+    def test_heading_w (self):
+        curr_map = self.get_map()
+
+        # entry 254 from Observer/LidarFix session, incorrectly reported as
+        # 8.83, 28.23 - 85 degrees
+        # actual: 0, 50, -90 degrees        
+        located_objects =  [
+            {
+                "w_windmill": {
+                    "id": "w_windmill",
+                    "x1": 1683.48,
+                    "x2": 1806.0,
+                    "y1": 616.79,
+                    "y2": 834.65,
+                    "time": 1700228901.9,
+                    "priority": 6,
+                    "confidence": 0.82,
+                    "camera_heading": 56.0
+                }
+                },
+                {
+                "sw_light": {
+                    "id": "sw_light",
+                    "x1": 623.52,
+                    "x2": 683.56,
+                    "y1": 248.99,
+                    "y2": 475.62,
+                    "time": 1700228903.2,
+                    "priority": 8,
+                    "confidence": 0.98,
+                    "camera_heading": 56.0
+                }
+                },
+                {
+                "n_light": {
+                    "id": "n_light",
+                    "x1": 115.08,
+                    "x2": 200.0,
+                    "y1": 169.55,
+                    "y2": 459.46,
+                    "time": 1700228936.5,
+                    "priority": 10,
+                    "confidence": 1.0,
+                    "camera_heading": 179.0
+                }
+            }
+        ]
+
+        # Add some lidar measurements
+        #lidar_map = self.__generate_lidar({
+        #    46.5:6184.9, # cat tree
+        #    49.5:6184.9, # cat tree, manually found angle
+        #    314.25:5842.0, # corrected lidar measurement
+        #    309.25:5842.0 # manually adjusted angle, based on visual
+        #})
+        lidar_map = None
+
+        # get visual degrees for each point
+        estimator = PositionEstimatorWithClustering(curr_map, horizontal_fov = self.__fov_horz, vertical_fov = self.__fov_vert, view_width=self.__view_width, view_height=self.__view_height)
+        x, y, heading, confidence, basis = estimator.get_coords_and_heading (located_objects = located_objects,  view_altitude = 19.0, estimator_mode = EstimatorMode.FAST, lidar_map=lidar_map)
+
+        logging.getLogger(__name__).info(f"Basis: {json.dumps(basis, cls=NavJsonEncoder, indent=2)}")
+        logging.getLogger(__name__).info(f"X:{x}, Y:{y}, Heading: {heading}, Confidence: {confidence}")
+
+        # actual coordinates are ~ (80, 200) with heading of around -180 (or +180. same thing)
+        self.assertGreaterEqual(x,-15)
+        self.assertLessEqual(x,15)
+
+        self.assertGreaterEqual(y,10)
+        self.assertLessEqual(y,80)
+
+        self.assertGreaterEqual(heading,-100)
+        self.assertLessEqual(heading,-80)
+        self.assertEqual(Confidence.CONFIDENCE_MEDIUM, confidence)
+
+        logging.getLogger(__name__).info(f"FAST : ({x},{y} - Heading {heading})")
+
+    def __generate_lidar (self, measurement_map):
+        lidar_data = []
+        for deg in np.arange(0, 360.25, .25):
+            if deg in measurement_map:
+                lidar_data.append(f"{measurement_map[deg]}")
+            else:
+                lidar_data.append(f"{-1.0}")
+        return LidarMap(0, 0.25, '|'.join(lidar_data))
+
+    def get_map (self):
+        return FieldMap( 
+            landmarks= {
+                "w_windmill": {
+                    "pattern":"na",
+                    "type":"windmill",
+                    "model":"basement",
+                    "x":-134.5,
+                    "y":0,
+                    "height":12.0,
+                    "altitude":6.0,
+                    "confidence":0.6,
+                    "lidar_visible":True,
+                    "priority":6
+                },
+                "nw_tree": {
+                    "pattern":"na",
+                    "type":"cat_tree",
+                    "model":"basement",
+                    "x":-145,
+                    "y":155,
+                    "height":24,
+                    "altitude":12,
+                    "confidence":0.6,
+                    "lidar_visible":True,
+                    "priority":7
+                },
+                "se_pineapple": {
+                    "pattern":"na",
+                    "type":"pineapple",
+                    "model":"basement",
+                    "x":102,
+                    "y":-87,
+                    "height":14.0,
+                    "altitude":7.0,
+                    "confidence":0.6,
+                    "lidar_visible":True,
+                    "priority":2
+                },   
+                "nw_house": {
+                    "pattern":"na",
+                    "type":"house",
+                    "model":"basement",
+                    "x":-71,
+                    "y":75,
+                    "height":7,
+                    "altitude":3.875,
+                    "confidence":0.6,
+                    "lidar_visible":False,
+                    "priority":1
+                },
+                "sw_light": {
+                    "pattern":"sideways_triangle_left",
+                    "type":"light",
+                    "model":"lights",
+                    "x":-132,
+                    "y":-79,
+                    "height":15.5,
+                    "altitude":33.5,
+                    "confidence":0.25,
+                    "lidar_visible":True,
+                    "priority":8
+                },	
+                "ne_light": {
+                    "pattern":"square",
+                    "type":"light",
+                    "model":"lights",
+                    "x":121.5,
+                    "y":174,
+                    "height":16,
+                    "altitude":15,
+                    "confidence":0.25,
+                    "lidar_visible":True,
+                    "priority":9
+                },
+                "n_light": {
+                    "pattern":"3",
+                    "type":"light",
+                    "model":"lights",
+                    "x":-68,
+                    "y":280,
+                    "height":25,
+                    "altitude":24.25,
+                    "confidence":0.25,
+                    "lidar_visible":True,
+                    "priority":10
+                },
+                "se_light": {
+                    "pattern":"sideways_triangle_right",
+                    "type":"light",
+                    "model":"lights",
+                    "x":111.5,
+                    "y":-68.5,
+                    "height":15.5,
+                    "altitude":16.75,
+                    "confidence":0.25,
+                    "lidar_visible":True,
+                    "priority":10
+                }        
+            },
+            shape="rectangle",
+            boundaries =  {
+                "xmin":-150,
+                "ymin":-50,
+                "xmax":150,
+                "ymax":250
+            },
+            near_boundaries = {
+                "xmin":-170,
+                "ymin":-100,
+                "xmax":170,
+                "ymax":270
+            },
+            obstacles= {
+                "christmas_tree": {
+                    "xmin":110,
+                    "ymin":-17,
+                    "xmax":150,
+                    "ymax":25
+                },
+                "old_stereo": {
+                    "xmin":136,
+                    "ymin":25,
+                    "xmax":150,
+                    "ymax":180
+                },
+                "pool_table": {
+                    "xmin":16,
+                    "ymin":180,
+                    "xmax":150,
+                    "ymax":250
+                },
+                "work_area": {
+                    "xmin":-150,
+                    "ymin":-50,
+                    "xmax":-130,
+                    "ymax":135
+                },
+                "fp_house": {
+                    "xmin":-74,
+                    "ymin":65,
+                    "xmax":-64,
+                    "ymax":74
+                },
+                "fp_tree": {
+                    "xmin":90,
+                    "ymin":99,
+                    "xmax":107,
+                    "ymax":116
+                },
+                "post_center": {
+                    "xmin":-3,
+                    "ymin":-3,
+                    "xmax":3,
+                    "ymax":3
+                },
+                "post_north": {
+                    "xmin":-3,
+                    "ymin":143,
+                    "xmax":3,
+                    "ymax":150
+                }
+            },
+            search={
+                "gazing_ball": {
+                        "pattern":"na",
+                        "model":"basement",
+                        "height":12.0,
+                        "confidence":0.6,
+                        "lidar_visible":False
+                },
+                "cone": {
+                        "pattern":"na",
+                        "model":"basement",
+                        "height":12.0,
+                        "confidence":0.6,
+                        "lidar_visible":True
+                },
+                "speaker": {
+                        "pattern":"na",
+                        "model":"basement",
+                        "height":8.5,
+                        "confidence":0.6,
+                        "lidar_visible":False
+                }    
+            }
+        )
