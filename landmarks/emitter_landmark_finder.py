@@ -42,12 +42,28 @@ class EmitterLandmarkFinder (LandmarkFinder) :
         landmark_locations = []
         
         for g in group_locations:
-            top_center_x, top_center_y = g.get_top().get_center()
-            bottom_center_x, bottom_center_y = g.get_bottom().get_center()
+            # if it's a square, it should be top left point and bottom right. Othweise, it should just be top and bottom
+            min_x = 0
+            max_x = 0
+            min_y = 0
+            max_y = 0
 
-            # bump the x's apart by the group's width
-            top_left_x = top_center_x - (int)(g.get_top().get_width() / 2)
-            bottom_right_x = bottom_center_x + (int)(g.get_bottom().get_width() / 2)
+            if g.get_pattern == EmitterGroupPattern.SQUARE:
+                e_left, e_right = g.get_left_and_right()
+                e_top = g.get_top()
+                e_bottom = g.get_bottom()
+                min_x, _ = e_left.get_center()
+                max_x, _ = e_right.get_center()
+                _, min_y = e_top.get_center()
+                _, max_y = e_bottom.get_center()
+            else: # any other pattern where we just look at 1 vertical line to determine size/center
+                top_center_x, min_y = g.get_top().get_center()
+                bottom_center_x, max_y = g.get_bottom().get_center()
+
+                # bump the x's apart by the group's width
+                min_x = top_center_x - (int)(g.get_top().get_width() / 2)
+                max_x = bottom_center_x + (int)(g.get_bottom().get_width() / 2)
+
             
             # make sure this group of emitters is a known group.
             # otherwise, we will ignore it. it may just be a stray light
@@ -58,10 +74,10 @@ class EmitterLandmarkFinder (LandmarkFinder) :
                     landmark_locations.append({
                         group_id : {
                         'id':group_id,
-                        'x1':top_left_x,
-                        'y1':top_center_y,
-                        'x2':bottom_right_x,
-                        'y2':bottom_center_y,
+                        'x1':min_x,
+                        'y1':min_y,
+                        'x2':max_x,
+                        'y2':max_y,
                         'confidence':g.get_confidence(),
                         'time':time.time()
                         }

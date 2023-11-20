@@ -1,5 +1,6 @@
 import cv2
 import logging
+import numpy as np
 
 class LandmarkLabeler:
     def __init__(self):
@@ -18,9 +19,9 @@ class LandmarkLabeler:
     #    'confidence': 0.99972785
     #  },
     # }
-    # NOTE: This may alter the image, so any analysis after this will include the bounding boxes
+    # NOTE: This makes a copy of the image, so as not to alter the original with bounding boxes. make sure enough memory availble
     def export_labeled_image (self, image, landmarks, distances, angles, file_name):
-        boxed_image = self.__add_boxes(image, landmarks, distances, angles)
+        boxed_image = self.__add_boxes(np.copy(image), landmarks, distances, angles)
         
         # write out to file_name
         cv2.imwrite(file_name, boxed_image)
