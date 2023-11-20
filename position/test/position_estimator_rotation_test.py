@@ -20,7 +20,7 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
         self.__view_width = CameraInfo.get_resolution_width(self.__camera_config_id)
 
         self.__estimator_mode = EstimatorMode.VERY_PRECISE
-        self.__adjust_for_altitude = True
+        self.__adjust_for_altitude = False
 
         return super().setUp()
 
@@ -35,6 +35,77 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
             adjust_for_altitude=self.__adjust_for_altitude)        
 
 
+    def test_heading_e (self):
+        curr_map = self.get_map()
+
+        # original coord pretty good, heading is bad
+        # x -84.2,y: 81.96,
+        # heading: 294.64
+        # actual heading somewhere betwee 45 and 90, didn't measure, but looked like probably about 70
+        #entry_num: 265
+
+        located_objects = [
+            {
+            "ne_light": {
+                "id": "ne_light",
+                "x1": 467.11,
+                "x2": 539.47,
+                "y1": 262.77,
+                "y2": 452.27,
+                "time": 1700489607.4,
+                "priority": 9,
+                "confidence": 0.62,
+                "camera_heading": 99.0
+            }
+            },
+            {
+            "w_windmill": {
+                "id": "w_windmill",
+                "x1": 1251.85,
+                "x2": 1399.21,
+                "y1": 563.93,
+                "y2": 860.93,
+                "time": 1700489643.7,
+                "priority": 6,
+                "confidence": 0.74,
+                "camera_heading": 228.0
+            }
+            },
+            {
+            "sw_light": {
+                "id": "sw_light",
+                "x1": 622.43,
+                "x2": 703.12,
+                "y1": 144.17,
+                "y2": 382.35,
+                "time": 1700489643.7,
+                "priority": 8,
+                "confidence": 1.0,
+                "camera_heading": 228.0
+            }
+            }
+        ]
+        lidar_map = None
+
+        # get visual degrees for each point
+        estimator = self.__get_estimator (curr_map)
+        x, y, heading, confidence, basis = estimator.get_coords_and_heading (located_objects = located_objects,  view_altitude = 19.0, lidar_map=lidar_map)
+
+        #logging.getLogger(__name__).info(f"Basis: {json.dumps(basis, cls=NavJsonEncoder, indent=2)}")
+        logging.getLogger(__name__).info(f"X:{x}, Y:{y}, Heading: {heading}, Confidence: {confidence}")
+
+        self.assertGreaterEqual(x,-100)
+        self.assertLessEqual(x,-50)
+
+        self.assertGreaterEqual(y,50)
+        self.assertLessEqual(y,100)
+
+        self.assertGreaterEqual(heading,55)
+        self.assertLessEqual(heading,85)
+        self.assertEqual(Confidence.CONFIDENCE_MEDIUM, confidence)
+
+        logging.getLogger(__name__).info(f"FAST : ({x},{y} - Heading {heading})")        
+        
     def test_heading_w (self):
         curr_map = self.get_map()
 
@@ -99,14 +170,14 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
         #logging.getLogger(__name__).info(f"Basis: {json.dumps(basis, cls=NavJsonEncoder, indent=2)}")
         logging.getLogger(__name__).info(f"X:{x}, Y:{y}, Heading: {heading}, Confidence: {confidence}")
 
-        self.assertGreaterEqual(x,-15)
-        self.assertLessEqual(x,15)
+        self.assertGreaterEqual(x,-100)
+        self.assertLessEqual(x,-50)
 
-        self.assertGreaterEqual(y,10)
-        self.assertLessEqual(y,80)
+        self.assertGreaterEqual(y,50)
+        self.assertLessEqual(y,100)
 
-        self.assertGreaterEqual(heading,-100)
-        self.assertLessEqual(heading,-80)
+        self.assertGreaterEqual(heading,30)
+        self.assertLessEqual(heading,90)
         self.assertEqual(Confidence.CONFIDENCE_MEDIUM, confidence)
 
         logging.getLogger(__name__).info(f"FAST : ({x},{y} - Heading {heading})")

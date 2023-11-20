@@ -382,7 +382,7 @@ class PositionEstimator:
             
             # Relative North: Based on the vehicle's assumed position, if it were facing the landmark
             # how much and which direction (degrees) would it need to turn to be facing north (up) on the plane
-            relative_north = self.__visual_degrees_calc.calculate_relative_north(
+            shortest_relative_north = self.__visual_degrees_calc.calculate_relative_north(
                 perspective_x=x,
                 perspective_y=y,
                 point_x=base_x,
@@ -412,30 +412,50 @@ class PositionEstimator:
             #logging.getLogger(__name__).info(f"{base_landmark_id} Landmark relative to vehicle: {landmark_deg_relative_to_vehicle_facing}")
 
             # to the landmark deg relative, do the opposite of relative north to see where vehicle is facing
-            # Note: This calculation is probably more complicated. 
+
+            # for this calculation to work, we want relative N to have the opposte sign as the vehicle relative position.
+            # if they have the same sign, make the vehicle rotate in the longer direction -1 * (360 - relative N)
+            relative_north_swapped = False
+            relative_north = shortest_relative_north
+            if (relative_north > 0 and landmark_deg_relative_to_vehicle_facing > 0) or (relative_north < 0 and landmark_deg_relative_to_vehicle_facing < 0):
+                relative_north_swapped = True
+                new_rn_negative = relative_north > 0
+                relative_north = (360 - abs(relative_north))
+                if new_rn_negative:
+                    relative_north *= -1
+                #if x < -50 and x > -100 and y < 100 and y > 50:
+                #    logging.getLogger(__name__).info(f"Relative N direction swapped from {shortest_relative_north} to {relative_north}")
+
+
+
             visible_heading = landmark_deg_relative_to_vehicle_facing + relative_north
-            
+
             # turn the vehicle toward the landmark, then from there turn toward north (according to landmark).
             # We will likely overshoot north, multiply by -1 to calculate what it would take to get us back to N.
             # this is our heading
             # If relative north is >0degrees from us, we are facing left of north (- degrees)
 
             # if our perspective is below the landmark, we need to flip the heading sign
-            if self.__is_heading_negative(landmark_id=base_landmark_id, position_x=x, landmark_x=base_x, relative_north=relative_north, visual_landmark_angle=landmark_deg_relative_to_vehicle_facing):
+            if self.__is_heading_negative(landmark_id=base_landmark_id, position_x=x, landmark_x=base_x, relative_north=shortest_relative_north, visual_landmark_angle=landmark_deg_relative_to_vehicle_facing, relative_north_swapped=relative_north_swapped):
                 visible_heading = -1 * abs(visible_heading)
             else:
                 visible_heading = abs(visible_heading)
 
-            #if x < 20 and x > -20 and y < 70 and y > 30:
-            #    logging.getLogger(__name__).info(f"Heading: {visible_heading}, Landmark: {base_landmark_id}, Relative N: {relative_north}, Visual Angle: {landmark_deg_relative_to_vehicle_facing}")
+            #if x < -50 and x > -100 and y < 100 and y > 50:
+            #    logging.getLogger(__name__).info(f"Perspective x:{x}, y:{y} - Heading: {visible_heading}, Landmark: {base_landmark_id}, Relative N: {relative_north}, Visual Angle: {landmark_deg_relative_to_vehicle_facing}")
 
             headings.append(visible_heading)
 
         return headings
 
-    def __is_heading_negative (self, landmark_id, position_x, landmark_x, relative_north, visual_landmark_angle):
-        if abs(relative_north) > 180 or abs(visual_landmark_angle) > 180:
-            logging.getLogger(__name__).error(f"Bad angle reading, neither of these should ever be > 180 - N:{relative_north}, V:{visual_landmark_angle}")
+    def __is_heading_negative (self, landmark_id, position_x, landmark_x, relative_north, visual_landmark_angle, relative_north_swapped):
+        if abs(visual_landmark_angle) > 180:
+            logging.getLogger(__name__).error(f"Visual landmark angle for {landmark_id} reported as {visual_landmark_angle}. This should never be > 180.")
+        if (relative_north_swapped == False and abs(relative_north) > 180):
+            logging.getLogger(__name__).error(f"Relative N value of {relative_north} is invalid. This should not be further than 180 degrees from 0")
+        elif (relative_north_swapped and abs(relative_north) > 360):
+            logging.getLogger(__name__).error(f"Relative N value of {relative_north} is invalid. This should not be further than 360 degrees from 0")
+        
 
         # if landmark is left of this position (on map)
         if position_x > landmark_x:
