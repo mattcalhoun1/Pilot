@@ -8,8 +8,8 @@ import statistics
 import logging
 
 class PositionEstimatorWithClustering (PositionEstimator):
-    def __init__(self, field_map : FieldMap, horizontal_fov, vertical_fov, view_width, view_height, base_front=90.0, use_multithreading = True, estimator_mode = EstimatorMode.VERY_PRECISE, max_lidar_drift_deg = 1.5, max_lidar_visual_variance_pct = 0.33):
-        PositionEstimator.__init__(self, field_map, horizontal_fov, vertical_fov, view_width, view_height, base_front, use_multithreading, estimator_mode, max_lidar_drift_deg, max_lidar_visual_variance_pct)
+    def __init__(self, field_map : FieldMap, horizontal_fov, vertical_fov, view_width, view_height, base_front=90.0, use_multithreading = True, estimator_mode = EstimatorMode.VERY_PRECISE, max_lidar_drift_deg = 1.5, max_lidar_visual_variance_pct = 0.33, adjust_for_altitude = True):
+        PositionEstimator.__init__(self, field_map, horizontal_fov, vertical_fov, view_width, view_height, base_front, use_multithreading, estimator_mode, max_lidar_drift_deg, max_lidar_visual_variance_pct, adjust_for_altitude)
         logging.getLogger(__name__).info("Position Clustering is enabled, for greater accuracy.")
         self.__default_heading_clusters = 2
         self.__heading_std_dev = 2

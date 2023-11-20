@@ -38,23 +38,23 @@ class VisualDistanceCalculator:
 
     # given a certain far side and far angle, along with estimated top/base sides,
     # return some other top/base possibilities that will match up with the far side    
-    def get_possible_top_base_distances (self, far_side, far_angle, estimated_base, estimated_top, max_adjustment = 0.5):
-        #
+    #def get_possible_top_base_distances (self, far_side, far_angle, estimated_base, estimated_top, max_adjustment = 0.5):
+    #    #
 
-        adjusted_base_angle = False
-        while base_angle is None:
-            try:
-                base_angle = trig_calc.calc_base_angle(far_side=actual_field_dist, base_side=base_side, top_side=top_side)
-            except Exception:
-                # our estimated distances may not add up to a 180 degree agle,
-                # bump them until they do
-                adjusted_base_angle = True 
-                base_side += base_side * .01
-                top_side += top_side * .01
-        if adjusted_base_angle:
-            logging.getLogger(__name__).info(f"{landmark_id}/{other_landmark_id} *ADJUSTED* - Actual Field Dist: {actual_field_dist}, Base Side: {base_side}, Top Side: {top_side}")
-        
-        top_angle = 180 - base_angle - abs(viz_angle)
+    #    adjusted_base_angle = False
+    #    while base_angle is None:
+    #        try:
+    #            base_angle = trig_calc.calc_base_angle(far_side=actual_field_dist, base_side=base_side, top_side=top_side)
+    #        except Exception:
+    ##            # our estimated distances may not add up to a 180 degree agle,
+    #            # bump them until they do
+    #            adjusted_base_angle = True 
+    #            base_side += base_side * .01
+    #            top_side += top_side * .01
+    #    if adjusted_base_angle:
+    #        logging.getLogger(__name__).info(f"{landmark_id}/{other_landmark_id} *ADJUSTED* - Actual Field Dist: {actual_field_dist}, Base Side: {base_side}, Top Side: {top_side}")
+    #    
+    #    top_angle = 180 - base_angle - abs(viz_angle)
 
 
     def __est_dist_given_viewed_height_beside (self, view_altitude, obj_height_degrees, obj_known_height, obj_top, obj_bottom):

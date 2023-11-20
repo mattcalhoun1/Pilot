@@ -119,7 +119,8 @@ class PilotNavigation:
                 use_multithreading=self.__config['MultithreadedPositioning'],
                 estimator_mode = PilotNavigation.__get_estimator_mode(self.__estimator_mode),
                 max_lidar_drift_deg = self.__config['LidarMaxDriftDegrees'],
-                max_lidar_visual_variance_pct = self.__config['LidarMaxVisualDistVariancePct']
+                max_lidar_visual_variance_pct = self.__config['LidarMaxVisualDistVariancePct'],
+                adjust_for_altitude=self.__config['AdjustForAltitude']
             )        
 
     def __get_estimator_mode (estimator_mode_str):

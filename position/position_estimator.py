@@ -11,7 +11,7 @@ import statistics
 import logging
 
 class PositionEstimator:
-    def __init__(self, field_map : FieldMap, horizontal_fov, vertical_fov, view_width, view_height, base_front=90.0, use_multithreading=True, estimator_mode = EstimatorMode.VERY_PRECISE, max_lidar_drift_deg = 1.5, max_lidar_visual_variance_pct = 0.33):
+    def __init__(self, field_map : FieldMap, horizontal_fov, vertical_fov, view_width, view_height, base_front=90.0, use_multithreading=True, estimator_mode = EstimatorMode.VERY_PRECISE, max_lidar_drift_deg = 1.5, max_lidar_visual_variance_pct = 0.33, adjust_for_altitude = True):
         self.__field_map = field_map
         self.__visual_dist_calc = VisualDistanceCalculator(horizontal_fov = horizontal_fov, vertical_fov = vertical_fov, view_width=view_width, view_height=view_height)
         self.__visual_degrees_calc = VisualDegreesCalculator(horizontal_fov = horizontal_fov, vertical_fov = vertical_fov, view_width=view_width, view_height=view_height)
@@ -24,6 +24,7 @@ class PositionEstimator:
         self.__estimator_mode = estimator_mode
         self.__max_lidar_drift = max_lidar_drift_deg
         self.__max_lidar_visual_variance = max_lidar_visual_variance_pct
+        self.__adjust_for_altitude = adjust_for_altitude
 
         self.__log_configuration()
 
@@ -150,7 +151,8 @@ class PositionEstimator:
                             view_altitude = view_altitude, 
                             obj_height_degrees = selected_angle['height_deg'], 
                             obj_known_height = self.__field_map.get_landmark_height(landmark_id=landmark_id), 
-                            obj_center_altitude = self.__field_map.get_landmark_altitude(landmark_id=landmark_id))
+                            obj_center_altitude = self.__field_map.get_landmark_altitude(landmark_id=landmark_id),
+                            adjust_for_altitude=self.__adjust_for_altitude)
 
                 distances[landmark_id] = {
                     'ground':ground_distance,
@@ -171,8 +173,8 @@ class PositionEstimator:
                             view_altitude = view_altitude, 
                             obj_height_degrees = selected_angle['height_deg'], 
                             obj_known_height = self.__field_map.get_search_obj_height(object_type=landmark_id.split('.')[0]), 
-                            obj_center_altitude = view_altitude # assume same altitude
-                )
+                            obj_center_altitude = view_altitude, # assume same altitude,
+                            adjust_for_altitude=self.__adjust_for_altitude)
 
                 distances[landmark_id] = {
                     'ground':ground_distance,
