@@ -48,7 +48,7 @@ class EmitterLandmarkFinder (LandmarkFinder) :
             min_y = 0
             max_y = 0
 
-            if g.get_pattern == EmitterGroupPattern.SQUARE:
+            if g.get_pattern() == EmitterGroupPattern.SQUARE:
                 e_left, e_right = g.get_left_and_right()
                 e_top = g.get_top()
                 e_bottom = g.get_bottom()
