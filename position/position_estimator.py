@@ -631,41 +631,50 @@ class PositionEstimator:
         }
 
         return centroid_x, centroid_y, heading, conf, basis
-
-    def get_possible_coords_isolated (self, landmark_id, other_landmark_id, distances, view_angles, estimator_mode, filter_out_of_bounds, allowed_variance, allowed_heading_variance):
+    
+    def get_possible_coords_isolated (self, landmark_id, other_landmark_id, distances, view_angles, estimator_mode, filter_out_of_bounds, allowed_variance, allowed_heading_variance, enforce_landmark_preferred_angles = True):
         # this is the angle of the other landmark id relative to this one.
         # positive means th OTHER is to the right. negative means OTHEr is to the left
         selected_this_angle = max(view_angles[landmark_id], key=lambda x:x['confidence'])
         #selected_other_angle = max(view_angles[other_landmark_id], key=lambda x:x['confidence'])
+        filtered_coords = []
 
         viz_angle = selected_this_angle['relative_deg'][other_landmark_id]
-        curr_possibilities = self.__get_possible_coordinates(
-            viz_angle=viz_angle, 
-            landmark_id=landmark_id, 
-            other_landmark_id=other_landmark_id, 
-            distances=distances,
-            view_angles=view_angles,
-            estimator_mode=estimator_mode)
+        lm_min_preferred = self.__max_or_none(self.__field_map.get_landmark_min_angle_preference(landmark_id), self.__field_map.get_landmark_min_angle_preference(other_landmark_id))
+        lm_max_preferred = self.__min_or_none(self.__field_map.get_landmark_max_angle_preference(landmark_id), self.__field_map.get_landmark_max_angle_preference(other_landmark_id))
 
-        in_bounds_coords = []
-        if filter_out_of_bounds:        
-            # filter any that are out of bounds. Allow near_bounds to be used, as the robot could wander a little out
-            for poss_x, poss_y in curr_possibilities:
-                if self.__field_map.is_near_bounds(x=poss_x, y=poss_y):
-                    in_bounds_coords.append((poss_x, poss_y))
+        if ((lm_max_preferred is None or abs(viz_angle) <= lm_max_preferred) and (lm_min_preferred is None or abs(viz_angle) >= lm_min_preferred)) or enforce_landmark_preferred_angles == False:
+            if (lm_min_preferred is not None and abs(viz_angle) < lm_min_preferred) or (lm_max_preferred is not None and abs(viz_angle) > lm_max_preferred):
+                logging.getLogger(__name__).info(f"Visual angle of {round(viz_angle,2)} between {landmark_id} and {other_landmark_id} is outside preferred, but using it anyway")
+
+            curr_possibilities = self.__get_possible_coordinates(
+                viz_angle=viz_angle, 
+                landmark_id=landmark_id, 
+                other_landmark_id=other_landmark_id, 
+                distances=distances,
+                view_angles=view_angles,
+                estimator_mode=estimator_mode)
+
+            in_bounds_coords = []
+            if filter_out_of_bounds:        
+                # filter any that are out of bounds. Allow near_bounds to be used, as the robot could wander a little out
+                for poss_x, poss_y in curr_possibilities:
+                    if self.__field_map.is_near_bounds(x=poss_x, y=poss_y):
+                        in_bounds_coords.append((poss_x, poss_y))
+            else:
+                in_bounds_coords = curr_possibilities
+
+            # filter any impossible coordinates
+            for poss_x, poss_y in in_bounds_coords:
+                if self.is_possible(poss_x, poss_y, view_angles=view_angles, allowed_variance=allowed_variance, allowed_heading_variance=allowed_heading_variance):
+                    filtered_coords.append((poss_x, poss_y))
         else:
-            in_bounds_coords = curr_possibilities
-
-        # filter any impossible coordinates
-        filtered_coords = []
-        for poss_x, poss_y in in_bounds_coords:
-            if self.is_possible(poss_x, poss_y, view_angles=view_angles, allowed_variance=allowed_variance, allowed_heading_variance=allowed_heading_variance):
-                filtered_coords.append((poss_x, poss_y))
+            logging.getLogger(__name__).info(f"Visual angle of {round(viz_angle, 2)} between {landmark_id} and {other_landmark_id} is outside preferred range, not using that one")
 
         return filtered_coords
 
 
-    def find_possible_coordinates (self, view_angles, distances, filter_out_of_bounds = True, allowed_variance = 0.3, allowed_heading_variance = 0.1, estimator_mode = EstimatorMode.FAST):
+    def find_possible_coordinates (self, view_angles, distances, filter_out_of_bounds = True, allowed_variance = 0.3, allowed_heading_variance = 0.1, estimator_mode = EstimatorMode.FAST, enforce_landmark_preferred_angles = True):
         possible_coords = []
         computed = []
         thread_params = []
@@ -691,7 +700,8 @@ class PositionEstimator:
                                 estimator_mode,
                                 filter_out_of_bounds,
                                 allowed_variance,
-                                allowed_heading_variance
+                                allowed_heading_variance,
+                                enforce_landmark_preferred_angles
                             ))
                         else:
                             coord_sets.append(
@@ -703,7 +713,8 @@ class PositionEstimator:
                                     estimator_mode=estimator_mode,
                                     filter_out_of_bounds=filter_out_of_bounds,
                                     allowed_variance=allowed_variance,
-                                    allowed_heading_variance=allowed_heading_variance
+                                    allowed_heading_variance=allowed_heading_variance,
+                                    enforce_landmark_preferred_angles=enforce_landmark_preferred_angles
                                 )
                             )
 
@@ -764,8 +775,28 @@ class PositionEstimator:
 
         return math.sqrt(((x2 - x1)**2) + ((y2 - y1) **2))
 
-def external_get_possible_coords_isolated (estimator_inst, landmark_id, other_landmark_id, distances, view_angles, estimator_mode, filter_out_of_bounds, allowed_variance, allowed_heading_variance):
-    return estimator_inst.get_possible_coords_isolated (landmark_id, other_landmark_id, distances, view_angles, estimator_mode, filter_out_of_bounds, allowed_variance, allowed_heading_variance)
+    def __min_or_none (self, val1, val2):
+        if val1 is None and val2 is None:
+            return None
+        elif val1 is None:
+            return val2
+        elif val2 is None:
+            return val1
+        
+        return min(val1, val2)
+
+    def __max_or_none (self, val1, val2):
+        if val1 is None and val2 is None:
+            return None
+        elif val1 is None:
+            return val2
+        elif val2 is None:
+            return val1
+        
+        return max(val1, val2)
+
+def external_get_possible_coords_isolated (estimator_inst, landmark_id, other_landmark_id, distances, view_angles, estimator_mode, filter_out_of_bounds, allowed_variance, allowed_heading_variance, enforce_landmark_preferred_angles):
+    return estimator_inst.get_possible_coords_isolated (landmark_id, other_landmark_id, distances, view_angles, estimator_mode, filter_out_of_bounds, allowed_variance, allowed_heading_variance, enforce_landmark_preferred_angles)
 
 if __name__ == "__main__":
     print("houdy")

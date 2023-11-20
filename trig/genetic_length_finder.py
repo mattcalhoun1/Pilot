@@ -77,7 +77,8 @@ class LengthFitnessTester:
         score = 0.0
         try:
             proposed_base, proposed_top = chromosome.get_proposed_solution()
-            #logging.getLogger(__name__).info(f"Testing base {proposed_base}, {proposed_top}")
+            # this line of code triggers a domain error if the triangle is not possible.
+            # so it's sort of an assertion that ensures bad solutions get thrown out
             base_angle = self.__trig_calc.calc_base_angle(
                 far_side=self.__far_side, 
                 base_side=proposed_base, 
@@ -85,9 +86,6 @@ class LengthFitnessTester:
             )
 
             # now given the all sides, see what it thinks the far angle is. However different that is becomes our difference
-
-
-            # this could be a solution
             # See how far off we are on the angle, and score it
             score = 1.0 / abs(self.__far_angle - self.__trig_calc.calc_far_angle(self.__far_side, proposed_base, proposed_top))
             #logging.getLogger(__name__).info(f"Score: {score}")

@@ -32,7 +32,7 @@ class PositionEstimatorWithClustering (PositionEstimator):
         
         return hits
 
-    def get_coords_and_heading (self, located_objects, view_altitude, estimator_mode = EstimatorMode.VERY_PRECISE, lidar_map = None):
+    def get_coords_and_heading (self, located_objects, view_altitude, estimator_mode = EstimatorMode.VERY_PRECISE, lidar_map = None, enforce_landmark_preferred_angles = True):
         angles = self.extract_object_view_angles(located_objects=located_objects)
         #logging.getLogger(__name__).info(f"Estimated Angles: {angles}")
 
@@ -56,7 +56,8 @@ class PositionEstimatorWithClustering (PositionEstimator):
                 distances=distances, 
                 allowed_variance=0.5, # we want to be able to adjust the estimated distances quite a bit. this isnt for accuracy
                 allowed_heading_variance = allowed_heading_variance,
-                estimator_mode=estimator_mode)
+                estimator_mode=estimator_mode,
+                enforce_landmark_preferred_angles=enforce_landmark_preferred_angles)
             #logging.getLogger(__name__).info(f"All possible: {coords}")
 
         # if we got some back, get the heading and return the centroid

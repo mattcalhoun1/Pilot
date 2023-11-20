@@ -488,7 +488,9 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
                     "altitude":6.0,
                     "confidence":0.6,
                     "lidar_visible":True,
-                    "priority":6
+                    "priority":6,
+                    "min_visual_angle_preference":15.0,
+                    "max_visual_angle_preference": 165.0
                 },
                 "nw_tree": {
                     "pattern":"na",
@@ -500,7 +502,9 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
                     "altitude":12,
                     "confidence":0.6,
                     "lidar_visible":True,
-                    "priority":7
+                    "priority":7,
+                    "min_visual_angle_preference":15.0,
+                    "max_visual_angle_preference": 165.0
                 },
                 "se_pineapple": {
                     "pattern":"na",
@@ -512,7 +516,9 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
                     "altitude":7.0,
                     "confidence":0.6,
                     "lidar_visible":True,
-                    "priority":2
+                    "priority":2,
+                    "min_visual_angle_preference":15.0,
+                    "max_visual_angle_preference": 165.0
                 },   
                 "nw_house": {
                     "pattern":"na",
@@ -524,7 +530,9 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
                     "altitude":3.875,
                     "confidence":0.6,
                     "lidar_visible":False,
-                    "priority":1
+                    "priority":1,
+                    "min_visual_angle_preference":15.0,
+                    "max_visual_angle_preference": 165.0
                 },
                 "sw_light": {
                     "pattern":"sideways_triangle_left",
@@ -536,7 +544,9 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
                     "altitude":33.5,
                     "confidence":0.25,
                     "lidar_visible":True,
-                    "priority":8
+                    "priority":8,
+                    "min_visual_angle_preference":15.0,
+                    "max_visual_angle_preference": 165.0
                 },	
                 "ne_light": {
                     "pattern":"square",
@@ -548,7 +558,9 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
                     "altitude":15,
                     "confidence":0.25,
                     "lidar_visible":True,
-                    "priority":9
+                    "priority":9,
+                    "min_visual_angle_preference":15.0,
+                    "max_visual_angle_preference": 165.0
                 },
                 "n_light": {
                     "pattern":"3",
@@ -560,7 +572,9 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
                     "altitude":24.25,
                     "confidence":0.25,
                     "lidar_visible":True,
-                    "priority":10
+                    "priority":10,
+                    "min_visual_angle_preference":15.0,
+                    "max_visual_angle_preference": 165.0
                 },
                 "se_light": {
                     "pattern":"sideways_triangle_right",
@@ -572,7 +586,9 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
                     "altitude":16.75,
                     "confidence":0.25,
                     "lidar_visible":True,
-                    "priority":10
+                    "priority":10,
+                    "min_visual_angle_preference":15.0,
+                    "max_visual_angle_preference": 165.0
                 }        
             },
             shape="rectangle",

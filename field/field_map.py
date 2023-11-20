@@ -143,6 +143,14 @@ class FieldMap:
         landmark = self.__landmarks[landmark_id]
         return 'lidar_visible' in landmark.keys() and landmark['lidar_visible']
 
+    def get_landmark_min_angle_preference (self, landmark_id):
+        landmark = self.__landmarks[landmark_id]
+        return landmark['min_visual_angle_preference'] if 'min_visual_angle_preference' in landmark else None
+
+    def get_landmark_max_angle_preference (self, landmark_id):
+        landmark = self.__landmarks[landmark_id]
+        return landmark['max_visual_angle_preference'] if 'max_visual_angle_preference' in landmark else None
+
     def get_landmark_position (self, landmark_id):
         landmark = self.__landmarks[landmark_id]
         return landmark['x'], landmark['y']
