@@ -19,6 +19,8 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
         self.__view_height = CameraInfo.get_resolution_height(self.__camera_config_id)
         self.__view_width = CameraInfo.get_resolution_width(self.__camera_config_id)
 
+        self.__estimator_mode = EstimatorMode.VERY_PRECISE
+
         return super().setUp()
 
 
@@ -81,8 +83,8 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
         lidar_map = None
 
         # get visual degrees for each point
-        estimator = PositionEstimatorWithClustering(curr_map, horizontal_fov = self.__fov_horz, vertical_fov = self.__fov_vert, view_width=self.__view_width, view_height=self.__view_height)
-        x, y, heading, confidence, basis = estimator.get_coords_and_heading (located_objects = located_objects,  view_altitude = 19.0, estimator_mode = EstimatorMode.VERY_PRECISE, lidar_map=lidar_map)
+        estimator = PositionEstimatorWithClustering(curr_map, horizontal_fov = self.__fov_horz, vertical_fov = self.__fov_vert, view_width=self.__view_width, view_height=self.__view_height, estimator_mode=self.__estimator_mode)
+        x, y, heading, confidence, basis = estimator.get_coords_and_heading (located_objects = located_objects,  view_altitude = 19.0, lidar_map=lidar_map)
 
         #logging.getLogger(__name__).info(f"Basis: {json.dumps(basis, cls=NavJsonEncoder, indent=2)}")
         logging.getLogger(__name__).info(f"X:{x}, Y:{y}, Heading: {heading}, Confidence: {confidence}")
@@ -157,8 +159,8 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
         lidar_map = None
 
         # get visual degrees for each point
-        estimator = PositionEstimatorWithClustering(curr_map, horizontal_fov = self.__fov_horz, vertical_fov = self.__fov_vert, view_width=self.__view_width, view_height=self.__view_height)
-        x, y, heading, confidence, basis = estimator.get_coords_and_heading (located_objects = located_objects,  view_altitude = 19.0, estimator_mode = EstimatorMode.VERY_PRECISE, lidar_map=lidar_map)
+        estimator = PositionEstimatorWithClustering(curr_map, horizontal_fov = self.__fov_horz, vertical_fov = self.__fov_vert, view_width=self.__view_width, view_height=self.__view_height, estimator_mode=self.__estimator_mode)
+        x, y, heading, confidence, basis = estimator.get_coords_and_heading (located_objects = located_objects,  view_altitude = 19.0, lidar_map=lidar_map)
 
         #logging.getLogger(__name__).info(f"Basis: {json.dumps(basis, cls=NavJsonEncoder, indent=2)}")
         logging.getLogger(__name__).info(f"X:{x}, Y:{y}, Heading: {heading}, Confidence: {confidence}")
@@ -233,8 +235,8 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
         lidar_map = None
 
         # get visual degrees for each point
-        estimator = PositionEstimatorWithClustering(curr_map, horizontal_fov = self.__fov_horz, vertical_fov = self.__fov_vert, view_width=self.__view_width, view_height=self.__view_height)
-        x, y, heading, confidence, basis = estimator.get_coords_and_heading (located_objects = located_objects,  view_altitude = 19.0, estimator_mode = EstimatorMode.VERY_PRECISE, lidar_map=lidar_map)
+        estimator = PositionEstimatorWithClustering(curr_map, horizontal_fov = self.__fov_horz, vertical_fov = self.__fov_vert, view_width=self.__view_width, view_height=self.__view_height, estimator_mode=self.__estimator_mode)
+        x, y, heading, confidence, basis = estimator.get_coords_and_heading (located_objects = located_objects,  view_altitude = 19.0, lidar_map=lidar_map)
 
         #logging.getLogger(__name__).info(f"Basis: {json.dumps(basis, cls=NavJsonEncoder, indent=2)}")
         logging.getLogger(__name__).info(f"X:{x}, Y:{y}, Heading: {heading}, Confidence: {confidence}")
@@ -309,8 +311,8 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
         lidar_map = None
 
         # get visual degrees for each point
-        estimator = PositionEstimatorWithClustering(curr_map, horizontal_fov = self.__fov_horz, vertical_fov = self.__fov_vert, view_width=self.__view_width, view_height=self.__view_height)
-        x, y, heading, confidence, basis = estimator.get_coords_and_heading (located_objects = located_objects,  view_altitude = 19.0, estimator_mode = EstimatorMode.PRECISE, lidar_map=lidar_map)
+        estimator = PositionEstimatorWithClustering(curr_map, horizontal_fov = self.__fov_horz, vertical_fov = self.__fov_vert, view_width=self.__view_width, view_height=self.__view_height, estimator_mode=self.__estimator_mode)
+        x, y, heading, confidence, basis = estimator.get_coords_and_heading (located_objects = located_objects,  view_altitude = 19.0, lidar_map=lidar_map)
 
         #logging.getLogger(__name__).info(f"Basis: {json.dumps(basis, cls=NavJsonEncoder, indent=2)}")
         logging.getLogger(__name__).info(f"X:{x}, Y:{y}, Heading: {heading}, Confidence: {confidence}")
@@ -385,8 +387,8 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
         lidar_map = None
 
         # get visual degrees for each point
-        estimator = PositionEstimatorWithClustering(curr_map, horizontal_fov = self.__fov_horz, vertical_fov = self.__fov_vert, view_width=self.__view_width, view_height=self.__view_height)
-        x, y, heading, confidence, basis = estimator.get_coords_and_heading (located_objects = located_objects,  view_altitude = 19.0, estimator_mode = EstimatorMode.PRECISE, lidar_map=lidar_map)
+        estimator = PositionEstimatorWithClustering(curr_map, horizontal_fov = self.__fov_horz, vertical_fov = self.__fov_vert, view_width=self.__view_width, view_height=self.__view_height, estimator_mode=self.__estimator_mode)
+        x, y, heading, confidence, basis = estimator.get_coords_and_heading (located_objects = located_objects,  view_altitude = 19.0, lidar_map=lidar_map)
 
         #logging.getLogger(__name__).info(f"Basis: {json.dumps(basis, cls=NavJsonEncoder, indent=2)}")
         logging.getLogger(__name__).info(f"X:{x}, Y:{y}, Heading: {heading}, Confidence: {confidence}")
@@ -448,8 +450,8 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
         lidar_map = None
 
         # get visual degrees for each point
-        estimator = PositionEstimatorWithClustering(curr_map, horizontal_fov = self.__fov_horz, vertical_fov = self.__fov_vert, view_width=self.__view_width, view_height=self.__view_height)
-        x, y, heading, confidence, basis = estimator.get_coords_and_heading (located_objects = located_objects,  view_altitude = 19.0, estimator_mode = EstimatorMode.FAST, lidar_map=lidar_map)
+        estimator = PositionEstimatorWithClustering(curr_map, horizontal_fov = self.__fov_horz, vertical_fov = self.__fov_vert, view_width=self.__view_width, view_height=self.__view_height, estimator_mode=self.__estimator_mode)
+        x, y, heading, confidence, basis = estimator.get_coords_and_heading (located_objects = located_objects,  view_altitude = 19.0, lidar_map=lidar_map)
 
         #logging.getLogger(__name__).info(f"Basis: {json.dumps(basis, cls=NavJsonEncoder, indent=2)}")
         logging.getLogger(__name__).info(f"X:{x}, Y:{y}, Heading: {heading}, Confidence: {confidence}")

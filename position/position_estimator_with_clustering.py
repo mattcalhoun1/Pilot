@@ -15,6 +15,7 @@ class PositionEstimatorWithClustering (PositionEstimator):
         self.__heading_std_dev = 2
         self.__default_coord_clusters = 2
         self.__coord_std_dev = 2
+        self.__estimator_mode = estimator_mode
 
     def get_possible_headings (self, x, y, view_angles):
         poss = PositionEstimator.get_possible_headings(self, x, y, view_angles)
@@ -32,7 +33,7 @@ class PositionEstimatorWithClustering (PositionEstimator):
         
         return hits
 
-    def get_coords_and_heading (self, located_objects, view_altitude, estimator_mode = EstimatorMode.VERY_PRECISE, lidar_map = None, enforce_landmark_preferred_angles = True):
+    def get_coords_and_heading (self, located_objects, view_altitude, lidar_map = None, enforce_landmark_preferred_angles = True):
         angles = self.extract_object_view_angles(located_objects=located_objects)
         #logging.getLogger(__name__).info(f"Estimated Angles: {angles}")
 
@@ -42,9 +43,9 @@ class PositionEstimatorWithClustering (PositionEstimator):
         #logging.getLogger(__name__).info(f"Estimated distances: {distances}")
 
         allowed_heading_variance = 0.07
-        if estimator_mode == EstimatorMode.PRECISE:
+        if self.__estimator_mode == EstimatorMode.PRECISE:
             allowed_heading_variance = 0.05
-        if estimator_mode == EstimatorMode.VERY_PRECISE:
+        if self.__estimator_mode == EstimatorMode.VERY_PRECISE:
             allowed_heading_variance = 0.03
 
         conf = Confidence.CONFIDENCE_VERY_LOW
@@ -56,7 +57,6 @@ class PositionEstimatorWithClustering (PositionEstimator):
                 distances=distances, 
                 allowed_variance=0.5, # we want to be able to adjust the estimated distances quite a bit. this isnt for accuracy
                 allowed_heading_variance = allowed_heading_variance,
-                estimator_mode=estimator_mode,
                 enforce_landmark_preferred_angles=enforce_landmark_preferred_angles)
             #logging.getLogger(__name__).info(f"All possible: {coords}")
 
@@ -192,8 +192,8 @@ class PositionEstimatorWithClustering (PositionEstimator):
         
         return all_coords
 
-def external_get_possible_coords_isolated (estimator_inst, landmark_id, other_landmark_id, distances, view_angles, estimator_mode, filter_out_of_bounds, allowed_variance, allowed_heading_variance):
-    return estimator_inst.get_possible_coords_isolated (landmark_id, other_landmark_id, distances, view_angles, estimator_mode, filter_out_of_bounds, allowed_variance, allowed_heading_variance)
+def external_get_possible_coords_isolated (estimator_inst, landmark_id, other_landmark_id, distances, view_angles, filter_out_of_bounds, allowed_variance, allowed_heading_variance):
+    return estimator_inst.get_possible_coords_isolated (landmark_id, other_landmark_id, distances, view_angles, filter_out_of_bounds, allowed_variance, allowed_heading_variance)
 
 if __name__ == "__main__":
     print("in main")

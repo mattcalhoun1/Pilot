@@ -206,19 +206,19 @@ class PositionEstimator:
         return distances
     
 
-    def __get_target_accuracy_and_time (self, estimator_mode):        
+    def __get_target_accuracy_and_time (self):        
         target_accuracy = 0.002
         allowed_time = 0.5
 
-        if estimator_mode == EstimatorMode.FAST:
+        if self.__estimator_mode == EstimatorMode.FAST:
             target_accuracy = 0.04
             allowed_time = 0.2
-        elif estimator_mode == EstimatorMode.VERY_PRECISE:
+        elif self.__estimator_mode == EstimatorMode.VERY_PRECISE:
             target_accuracy = 0.001
         
         return target_accuracy, allowed_time
 
-    def __get_possible_coordinates (self, viz_angle, landmark_id, other_landmark_id, distances, view_angles, estimator_mode):
+    def __get_possible_coordinates (self, viz_angle, landmark_id, other_landmark_id, distances, view_angles):
         actual_field_dist = self.__field_map.get_distance(landmark_id_1=landmark_id,landmark_id_2=other_landmark_id)
         possible = []
 
@@ -295,7 +295,7 @@ class PositionEstimator:
                 top_confidence=top_confidence
             )
 
-            target_accuracy, allowed_time = self.__get_target_accuracy_and_time(estimator_mode)
+            target_accuracy, allowed_time = self.__get_target_accuracy_and_time()
 
             possible_lengths = length_finder.find_lengths(max_num_solutions=10, target_accuracy=target_accuracy, allowed_time=allowed_time)
 
@@ -602,8 +602,7 @@ class PositionEstimator:
                 view_angles=angles, 
                 distances=distances, 
                 allowed_variance=0.4, # we want to be able to adjust the estimated distances quite a bit. this isnt for accuracy
-                allowed_heading_variance = self.__get_allowed_heading_variance(),
-                estimator_mode=self.__estimator_mode)
+                allowed_heading_variance = self.__get_allowed_heading_variance())
 
         # if we got some back, get the heading and return the centroid
         heading = None
@@ -632,7 +631,7 @@ class PositionEstimator:
 
         return centroid_x, centroid_y, heading, conf, basis
     
-    def get_possible_coords_isolated (self, landmark_id, other_landmark_id, distances, view_angles, estimator_mode, filter_out_of_bounds, allowed_variance, allowed_heading_variance, enforce_landmark_preferred_angles = True):
+    def get_possible_coords_isolated (self, landmark_id, other_landmark_id, distances, view_angles, filter_out_of_bounds, allowed_variance, allowed_heading_variance, enforce_landmark_preferred_angles = True):
         # this is the angle of the other landmark id relative to this one.
         # positive means th OTHER is to the right. negative means OTHEr is to the left
         selected_this_angle = max(view_angles[landmark_id], key=lambda x:x['confidence'])
@@ -652,8 +651,7 @@ class PositionEstimator:
                 landmark_id=landmark_id, 
                 other_landmark_id=other_landmark_id, 
                 distances=distances,
-                view_angles=view_angles,
-                estimator_mode=estimator_mode)
+                view_angles=view_angles)
 
             in_bounds_coords = []
             if filter_out_of_bounds:        
@@ -674,7 +672,7 @@ class PositionEstimator:
         return filtered_coords
 
 
-    def find_possible_coordinates (self, view_angles, distances, filter_out_of_bounds = True, allowed_variance = 0.3, allowed_heading_variance = 0.1, estimator_mode = EstimatorMode.FAST, enforce_landmark_preferred_angles = True):
+    def find_possible_coordinates (self, view_angles, distances, filter_out_of_bounds = True, allowed_variance = 0.3, allowed_heading_variance = 0.1, enforce_landmark_preferred_angles = True):
         possible_coords = []
         computed = []
         thread_params = []
@@ -697,7 +695,6 @@ class PositionEstimator:
                                 other_landmark_id,
                                 distances,
                                 view_angles,
-                                estimator_mode,
                                 filter_out_of_bounds,
                                 allowed_variance,
                                 allowed_heading_variance,
@@ -710,7 +707,6 @@ class PositionEstimator:
                                     other_landmark_id=other_landmark_id,
                                     distances=distances,
                                     view_angles=view_angles,
-                                    estimator_mode=estimator_mode,
                                     filter_out_of_bounds=filter_out_of_bounds,
                                     allowed_variance=allowed_variance,
                                     allowed_heading_variance=allowed_heading_variance,
@@ -795,8 +791,8 @@ class PositionEstimator:
         
         return max(val1, val2)
 
-def external_get_possible_coords_isolated (estimator_inst, landmark_id, other_landmark_id, distances, view_angles, estimator_mode, filter_out_of_bounds, allowed_variance, allowed_heading_variance, enforce_landmark_preferred_angles):
-    return estimator_inst.get_possible_coords_isolated (landmark_id, other_landmark_id, distances, view_angles, estimator_mode, filter_out_of_bounds, allowed_variance, allowed_heading_variance, enforce_landmark_preferred_angles)
+def external_get_possible_coords_isolated (estimator_inst, landmark_id, other_landmark_id, distances, view_angles, filter_out_of_bounds, allowed_variance, allowed_heading_variance, enforce_landmark_preferred_angles):
+    return estimator_inst.get_possible_coords_isolated (landmark_id, other_landmark_id, distances, view_angles, filter_out_of_bounds, allowed_variance, allowed_heading_variance, enforce_landmark_preferred_angles)
 
 if __name__ == "__main__":
     print("houdy")
