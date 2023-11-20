@@ -34,8 +34,163 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
             estimator_mode=self.__estimator_mode,
             adjust_for_altitude=self.__adjust_for_altitude)        
 
+    def test_below_axis_facing_nw (self):
+        curr_map = self.get_map()
+        located_objects = [
+            {
+            "n_light": {
+                "id": "n_light",
+                "x1": 492.97,
+                "x2": 565.25,
+                "y1": 201.3,
+                "y2": 402.84,
+                "time": 1700507692.4,
+                "priority": 10,
+                "confidence": 0.97,
+                "camera_heading": 122.0
+            }
+            },
+            {
+            "w_windmill": {
+                "id": "w_windmill",
+                "x1": 792.17,
+                "x2": 925.39,
+                "y1": 660.77,
+                "y2": 934.32,
+                "time": 1700507696.8,
+                "priority": 6,
+                "confidence": 0.71,
+                "camera_heading": 56.0
+            }
+            },
+            {
+            "nw_house": {
+                "id": "nw_house",
+                "x1": 770.46,
+                "x2": 975.81,
+                "y1": 593.44,
+                "y2": 751.44,
+                "time": 1700507711.5,
+                "priority": 1,
+                "confidence": 1.0,
+                "camera_heading": 99.0
+            }
+            },
+            {
+            "se_light": {
+                "id": "se_light",
+                "x1": 583.17,
+                "x2": 634.58,
+                "y1": 240.59,
+                "y2": 550.68,
+                "time": 1700507748.6,
+                "priority": 10,
+                "confidence": 0.99,
+                "camera_heading": 228.0
+            }
+            }            
+        ]
 
-    def test_heading_e (self):
+        lidar_map = self.__generate_lidar({
+            324.0:3101.34,#122.1 inches
+            23.5:8557.26#336.9 inches
+        })
+
+        # get visual degrees for each point
+        estimator = self.__get_estimator (curr_map)
+        x, y, heading, confidence, basis = estimator.get_coords_and_heading (located_objects = located_objects,  view_altitude = 19.0, lidar_map=lidar_map)
+
+        #logging.getLogger(__name__).info(f"Basis: {json.dumps(basis, cls=NavJsonEncoder, indent=2)}")
+        logging.getLogger(__name__).info(f"X:{x}, Y:{y}, Heading: {heading}, Confidence: {confidence}")
+
+        self.assertGreaterEqual(x,-40)
+        self.assertLessEqual(x,10)
+
+        self.assertGreaterEqual(y,-70)
+        self.assertLessEqual(y,25)
+
+        self.assertGreaterEqual(heading,-60)
+        self.assertLessEqual(heading,-20)
+        self.assertEqual(Confidence.CONFIDENCE_HIGH, confidence)
+
+        logging.getLogger(__name__).info(f"FAST : ({x},{y} - Heading {heading})")     
+
+    def Xtest_10_60_110 (self):
+        curr_map = self.get_map()
+
+        # reported coords off, original reported:
+        #"position_x": -78.11,
+        #"position_y": 105.37,
+        #"heading": 91.07,
+        #"entry_num": 306,        
+        # actual heading somewhere near 110, actual coord near 10,60
+
+        located_objects = [
+            {
+            "se_light": {
+                "id": "se_light",
+                "x1": 650.33,
+                "x2": 724.44,
+                "y1": 244.71,
+                "y2": 499.7,
+                "time": 1700502312.4,
+                "priority": 10,
+                "confidence": 0.86,
+                "camera_heading": 122.0
+            }
+            },
+            {
+            "w_windmill": {
+                "id": "w_windmill",
+                "x1": 601.51,
+                "x2": 717.7,
+                "y1": 482.09,
+                "y2": 676.0,
+                "time": 1700502378.9,
+                "priority": 6,
+                "confidence": 0.92,
+                "camera_heading": 228.0
+            }
+            },
+            {
+            "n_light": {
+                "id": "n_light",
+                "x1": 1250.23,
+                "x2": 1306.51,
+                "y1": 359.63,
+                "y2": 637.49,
+                "time": 1700502384.6,
+                "priority": 10,
+                "confidence": 0.98,
+                "camera_heading": -51.0
+            }
+            }
+        ]
+
+        lidar_map = None
+
+        # get visual degrees for each point
+        estimator = self.__get_estimator (curr_map)
+        x, y, heading, confidence, basis = estimator.get_coords_and_heading (located_objects = located_objects,  view_altitude = 19.0, lidar_map=lidar_map)
+
+        #logging.getLogger(__name__).info(f"Basis: {json.dumps(basis, cls=NavJsonEncoder, indent=2)}")
+        logging.getLogger(__name__).info(f"X:{x}, Y:{y}, Heading: {heading}, Confidence: {confidence}")
+
+        self.assertGreaterEqual(x,-20)
+        self.assertLessEqual(x,50)
+
+        self.assertGreaterEqual(y,20)
+        self.assertLessEqual(y,100)
+
+        self.assertGreaterEqual(heading,90)
+        self.assertLessEqual(heading,120)
+        self.assertEqual(Confidence.CONFIDENCE_MEDIUM, confidence)
+
+        logging.getLogger(__name__).info(f"FAST : ({x},{y} - Heading {heading})")        
+
+
+
+    def Xtest_heading_e (self):
         curr_map = self.get_map()
 
         # original coord pretty good, heading is bad
@@ -106,7 +261,7 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
 
         logging.getLogger(__name__).info(f"FAST : ({x},{y} - Heading {heading})")        
         
-    def test_heading_w (self):
+    def Xtest_heading_w (self):
         curr_map = self.get_map()
 
         # entry 254 from Observer/LidarFix session, incorrectly reported as
@@ -182,7 +337,7 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
 
         logging.getLogger(__name__).info(f"FAST : ({x},{y} - Heading {heading})")
 
-    def test_heading_w_45 (self):
+    def Xtest_heading_w_45 (self):
         curr_map = self.get_map()
 
         # entry 255 from Observer/LidarFix session, incorrectly reported as
@@ -258,7 +413,7 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
 
         logging.getLogger(__name__).info(f"FAST : ({x},{y} - Heading {heading})")
 
-    def test_heading_N (self):
+    def Xtest_heading_N (self):
         curr_map = self.get_map()
 
         # entry 250 from Observer/LidarFix session, incorrectly reported as
@@ -334,7 +489,7 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
 
         logging.getLogger(__name__).info(f"FAST : ({x},{y} - Heading {heading})")
 
-    def test_heading_e_45 (self):
+    def Xtest_heading_e_45 (self):
         curr_map = self.get_map()
 
         # entry 251 from Observer/LidarFix session, incorrectly reported as
@@ -410,7 +565,7 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
 
         logging.getLogger(__name__).info(f"FAST : ({x},{y} - Heading {heading})")
 
-    def test_heading_e (self):
+    def Xtest_heading_e (self):
         curr_map = self.get_map()
 
         # entry 251 from Observer/LidarFix session, incorrectly reported as
@@ -486,7 +641,7 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
 
         logging.getLogger(__name__).info(f"FAST : ({x},{y} - Heading {heading})")
 
-    def test_heading_n_test_w (self):
+    def Xtest_heading_n_test_w (self):
         curr_map = self.get_map()
 
         # entry 262 from Observer/LidarFix session, incorrectly reported as

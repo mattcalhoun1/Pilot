@@ -6,6 +6,7 @@ import numpy as np
 from sklearn.cluster import KMeans
 import statistics
 import logging
+import time
 
 class PositionEstimatorWithClustering (PositionEstimator):
     def __init__(self, field_map : FieldMap, horizontal_fov, vertical_fov, view_width, view_height, base_front=90.0, use_multithreading = True, estimator_mode = EstimatorMode.VERY_PRECISE, max_lidar_drift_deg = 1.5, max_lidar_visual_variance_pct = 0.33, adjust_for_altitude = True):
@@ -17,13 +18,18 @@ class PositionEstimatorWithClustering (PositionEstimator):
         self.__coord_std_dev = 2
         self.__estimator_mode = estimator_mode
 
-    def get_possible_headings (self, x, y, view_angles):
-        poss = PositionEstimator.get_possible_headings(self, x, y, view_angles)
-        #logging.getLogger(__name__).info(f"Possible headings, before clustering cleanup: {poss}")
+    def get_heading(self, x, y, angles):
+        all_headings = PositionEstimator.get_possible_headings(self, x, y, angles)
+        #logging.getLogger(__name__).info(f"All possible headings: {all_headings}")
+        heading = None
 
-        cleaned = self.__remove_heading_outliers(poss)
-        
-        return cleaned
+        cleaned = self.__remove_heading_outliers(all_headings)
+
+        if len(cleaned) > 1:
+            return statistics.mean(cleaned)
+        elif len(cleaned) == 1:
+            return cleaned[0]
+        return heading 
     
     def count_lidar_hits (self, distances):
         hits = 0
@@ -42,11 +48,7 @@ class PositionEstimatorWithClustering (PositionEstimator):
 
         #logging.getLogger(__name__).info(f"Estimated distances: {distances}")
 
-        allowed_heading_variance = 0.07
-        if self.__estimator_mode == EstimatorMode.PRECISE:
-            allowed_heading_variance = 0.05
-        if self.__estimator_mode == EstimatorMode.VERY_PRECISE:
-            allowed_heading_variance = 0.03
+        allowed_heading_variance = PositionEstimator.get_allowed_heading_variance(self)
 
         conf = Confidence.CONFIDENCE_VERY_LOW
         coords = []
@@ -116,8 +118,8 @@ class PositionEstimatorWithClustering (PositionEstimator):
         
     
     def __get_largest_headings_cluster (self, headings, n_clusters):
-        largest = []
-        
+        start_time = time.time()
+
         np_headings = np.array(headings).reshape(-1, 1)
         model = KMeans(n_clusters=n_clusters, random_state=0, n_init=2).fit(np_headings)
         pred = model.labels_
@@ -137,7 +139,9 @@ class PositionEstimatorWithClustering (PositionEstimator):
             if len(groups[g]) > largest_amount:
                 largest_amount = len(groups[g])
                 largest_cluster = g
-        
+
+        logging.getLogger(__name__).info(f"Clustering {len(headings)} headings took {time.time() - start_time} sec")
+
         return groups[largest_cluster]
                 
     def __remove_coordinates_outliers (self, all_coords):
@@ -161,6 +165,7 @@ class PositionEstimatorWithClustering (PositionEstimator):
     def __get_largest_coordinates_cluster (self, all_coords, n_clusters):
         largest = []
         distances = []
+        start_time = time.time()
         
         for i, c in enumerate(all_coords):
             # calc distance from 0,0, maybe not the best choice
@@ -189,7 +194,9 @@ class PositionEstimatorWithClustering (PositionEstimator):
                     largest_cluster = g
             
             return groups[largest_cluster]
-        
+
+        logging.getLogger(__name__).info(f"Clustering coords took {time.time() - start_time} sec")
+
         return all_coords
 
 def external_get_possible_coords_isolated (estimator_inst, landmark_id, other_landmark_id, distances, view_angles, filter_out_of_bounds, allowed_variance, allowed_heading_variance):

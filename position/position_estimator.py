@@ -213,12 +213,24 @@ class PositionEstimator:
         allowed_time = 0.5
 
         if self.__estimator_mode == EstimatorMode.FAST:
-            target_accuracy = 0.04
+            target_accuracy = 0.01
             allowed_time = 0.2
         elif self.__estimator_mode == EstimatorMode.VERY_PRECISE:
             target_accuracy = 0.001
+            allowed_time = 0.7
         
         return target_accuracy, allowed_time
+    
+    def __get_target_length_finder_solutions (self):
+        target_solutions = 12
+
+        if self.__estimator_mode == EstimatorMode.FAST:
+            target_solutions = 10
+        elif self.__estimator_mode == EstimatorMode.VERY_PRECISE:
+            target_solutions = 20
+        
+        return target_solutions
+
 
     def __get_possible_coordinates (self, viz_angle, landmark_id, other_landmark_id, distances, view_angles):
         actual_field_dist = self.__field_map.get_distance(landmark_id_1=landmark_id,landmark_id_2=other_landmark_id)
@@ -299,7 +311,8 @@ class PositionEstimator:
 
             target_accuracy, allowed_time = self.__get_target_accuracy_and_time()
 
-            possible_lengths = length_finder.find_lengths(max_num_solutions=10, target_accuracy=target_accuracy, allowed_time=allowed_time)
+            possible_lengths = length_finder.find_lengths(
+                max_num_solutions=self.__get_target_length_finder_solutions(), target_accuracy=target_accuracy, allowed_time=allowed_time)
 
             for found_base_side, found_top_side, found_far_angle_diff in possible_lengths:
                 #logging.getLogger(__name__).info(f"Trying out lengths - base: {found_base_side}, top: {found_top_side}")
@@ -415,15 +428,17 @@ class PositionEstimator:
 
             # for this calculation to work, we want relative N to have the opposte sign as the vehicle relative position.
             # if they have the same sign, make the vehicle rotate in the longer direction -1 * (360 - relative N)
+
+            # not fully confident in this 'if' condition
             relative_north_swapped = False
             relative_north = shortest_relative_north
-            if (relative_north > 0 and landmark_deg_relative_to_vehicle_facing > 0) or (relative_north < 0 and landmark_deg_relative_to_vehicle_facing < 0):
+            if relative_north + landmark_deg_relative_to_vehicle_facing > 180:# (relative_north > 0 and landmark_deg_relative_to_vehicle_facing > 0) or (relative_north < 0 and landmark_deg_relative_to_vehicle_facing < 0):
                 relative_north_swapped = True
                 new_rn_negative = relative_north > 0
                 relative_north = (360 - abs(relative_north))
                 if new_rn_negative:
                     relative_north *= -1
-                #if x < -50 and x > -100 and y < 100 and y > 50:
+                #if x < 0 and x > -40 and y < 0 and y > -50:
                 #    logging.getLogger(__name__).info(f"Relative N direction swapped from {shortest_relative_north} to {relative_north}")
 
 
@@ -441,7 +456,7 @@ class PositionEstimator:
             else:
                 visible_heading = abs(visible_heading)
 
-            #if x < -50 and x > -100 and y < 100 and y > 50:
+            #if x < 0 and x > -40 and y < 0 and y > -50:
             #    logging.getLogger(__name__).info(f"Perspective x:{x}, y:{y} - Heading: {visible_heading}, Landmark: {base_landmark_id}, Relative N: {relative_north}, Visual Angle: {landmark_deg_relative_to_vehicle_facing}")
 
             headings.append(visible_heading)
@@ -595,14 +610,14 @@ class PositionEstimator:
 
         return acceptable
 
-    def __get_allowed_heading_variance (self):
-        allowed_heading_variance = 0.09
+    def get_allowed_heading_variance (self):
+        allowed_heading_variance = 0.03
         if self.__estimator_mode == EstimatorMode.PRECISE:
-            allowed_heading_variance = 0.07
+            allowed_heading_variance = 0.03
         if self.__estimator_mode == EstimatorMode.VERY_PRECISE:
-            allowed_heading_variance = 0.06
+            allowed_heading_variance = 0.025
         return allowed_heading_variance
-    
+
     # gets estimated coordinates and heading, given located objects and altitude
     # returns x,y,heading,basis
     # heading of 0 means vehicle is pointed north on the axis.
@@ -623,8 +638,8 @@ class PositionEstimator:
             coords = self.find_possible_coordinates(
                 view_angles=angles, 
                 distances=distances, 
-                allowed_variance=0.4, # we want to be able to adjust the estimated distances quite a bit. this isnt for accuracy
-                allowed_heading_variance = self.__get_allowed_heading_variance())
+                allowed_variance=0.3, # we want to be able to adjust the estimated distances quite a bit. this isnt for accuracy
+                allowed_heading_variance = self.get_allowed_heading_variance())
 
         # if we got some back, get the heading and return the centroid
         heading = None
@@ -688,8 +703,11 @@ class PositionEstimator:
             for poss_x, poss_y in in_bounds_coords:
                 if self.is_possible(poss_x, poss_y, view_angles=view_angles, allowed_variance=allowed_variance, allowed_heading_variance=allowed_heading_variance):
                     filtered_coords.append((poss_x, poss_y))
+
+            #logging.getLogger(__name__).info(f"Before allowed filter: {len(in_bounds_coords)}, after allowed filter: {len(filtered_coords)}")
+
         else:
-            logging.getLogger(__name__).info(f"Visual angle of {round(viz_angle, 2)} between {landmark_id} and {other_landmark_id} is outside preferred range, not using that one")
+            logging.getLogger(__name__).debug(f"Visual angle of {round(viz_angle, 2)} between {landmark_id} and {other_landmark_id} is outside preferred range, not using that one")
 
         return filtered_coords
 
