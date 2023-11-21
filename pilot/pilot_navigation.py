@@ -372,12 +372,10 @@ class PilotNavigation:
                 elif landmark_requirements_met:
                     logging.getLogger(__name__).info(f"Combined Landmarks: {combined_landmarks}")
                     x, y, heading, confidence, basis = self.get_coords_and_heading_for_landmarks (combined_landmarks=combined_landmarks, allow_lidar = True)
-                    logging.getLogger(__name__).info(f"=== Coords: ({x} , {y})  Heading: {heading}, Confidence: {confidence}, Successes: {successes} ===")
+                    logging.getLogger(__name__).info(f"=== Coords: ({x} , {y})  Heading: {heading}, Confidence: {confidence} ===")
                     if x is not None and y is not None and heading is not None and confidence is not None and confidence >= self.__min_position_confidence:
                         # display on vehicle, if configured
                         self.__vehicle.display_position(x=x, y=y, heading=heading, wait_for_result = True) # if we dont wait for result, the repositino can fail
-
-                        successes += 1
                 else:
                     num_repositions_used += 1
 
@@ -422,7 +420,7 @@ class PilotNavigation:
         # log this failure, if configured
         self.__pilot_logger.log_position_failure(map_id=self.__map_id, basis=basis)
 
-        # not enough successes to report a location
+        # positioning failed
         return None,None,None,None
 
     def __are_landmark_requirements_met (self, tiered_landmarks):
@@ -443,8 +441,12 @@ class PilotNavigation:
 
         for tier_id in self.__config['Landmarks']['Tiers']:
             this_tier_preferred = self.__config['Landmarks']['Tiers'][tier_id]['Preferred']
-            if tier_id not in tiered_landmarks or len(tiered_landmarks[tier_id]) < this_tier_preferred:
-                logging.getLogger(__name__).info(f"Less than preferred tier {tier_id} landmarks have been found")
+            logging.getLogger(__name__).info(f"Landmark Tier {tier_id} prefers: {this_tier_preferred}")
+            if tier_id not in tiered_landmarks:
+                logging.getLogger("No landmarks from that tier found")
+                return False
+            elif len(tiered_landmarks[tier_id]) < this_tier_preferred:
+                logging.getLogger(__name__).info(f"Less than preferred tier {tier_id} landmarks have been found ({len(tiered_landmarks[tier_id])})")
                 return False
 
         return True
