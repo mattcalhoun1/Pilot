@@ -132,11 +132,11 @@ class PilotNavigation:
             return EstimatorMode.PRECISE
         
     def __get_confidence (confidence_str):
-        if confidence_str.low() == 'medium':
+        if confidence_str.lower() == 'medium':
             return Confidence.CONFIDENCE_MEDIUM
-        if confidence_str.low() == 'low':
+        if confidence_str.lower() == 'low':
             return Confidence.CONFIDENCE_LOW
-        if confidence_str.low() == 'high':
+        if confidence_str.lower() == 'high':
             return Confidence.CONFIDENCE_HIGH
         
         return Confidence.CONFIDENCE_FACT
