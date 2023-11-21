@@ -30,33 +30,33 @@ class PilotNavigation:
         self.__camera_manager = CameraManager()
         self.__enabled_cameras = {}
         self.__camera_headings = {}
-        self.__last_location_update = time.time()
         self.__curr_altitude = starting_altitude
         self.__vehicle = vehicle
 
-        self.__lidar_enabled_positioning = self.__config['LidarEnabledPositioning']
-        self.__smoothing_cycles_per_image = self.__config['SmoothingCyclesPerImage']
+        self.__lidar_enabled_positioning = self.__config['Lidar']['EnabledPositioning']
+        self.__smoothing_cycles_per_image = self.__config['Landmarks']['Detection']['SmoothingCyclesPerImage']
         self.__lidar_map = None
         self.__lidar_time = 0
-        self.__lidar_max_age = self.__config['LidarMaxAge'] # max seconds old lidar data can be. As long as the vehicle doesn't move the lidar should be good indefinitely, as long as objects don't move around it
+        self.__lidar_max_age = self.__config['Lidar']['MaxAge'] # max seconds old lidar data can be. As long as the vehicle doesn't move the lidar should be good indefinitely, as long as objects don't move around it
 
         self.__locator = TFLiteObjectLocator(model_configs = pilot_resources.get_model_configs())
-        self.__estimator_mode = PilotNavigation.__get_estimator_mode(self.__config['EstimatorMode'])
-        self.__default_preferred_num_landmarks = 3
-        if self.__estimator_mode == EstimatorMode.FAST:
-            self.__default_preferred_num_landmarks = 2
-        elif self.__estimator_mode == EstimatorMode.VERY_PRECISE:
-            self.__default_preferred_num_landmarks = 4
-                                                                     
+        self.__estimator_mode = PilotNavigation.__get_estimator_mode(self.__config['Positioning']['EstimatorMode'])
 
-        self.__delay_between_location_attempts = .2 # how long to wait between location attemps
-        self.__max_location_attempts = 2 # how many times to try retrieve location before skipping
-        self.__min_location_success = 3 # how many locations to receive before considering the coordinates valid
-        self.__min_location_confidence = Confidence.CONFIDENCE_LOW # minimum location confidence before it can be considered valid
-        self.__min_object_confidence = 0.25 if 'MinObjectConfidence' not in self.__config else self.__config['MinObjectConfidence']
+        self.__delay_between_location_attempts = self.__config['Positioning']['PositionRetryDelaySeconds'] # how long to wait between location attemps
+
+        # max number of tries to receive a preferred confidence location
+        self.__max_position_attempts = self.__config['Positioning']['MaxTargetConfidenceAttempts']
+
+         # minimum location confidence before it can be considered valid
+        self.__min_position_confidence = PilotNavigation.__get_confidence(self.__config['Positioning']['MinPositionConfidence'])
+
+         # minimum location confidence before it can be considered valid
+        self.__preferred_position_confidence = PilotNavigation.__get_confidence(self.__config['Positioning']['PreferredPositionConfidence'])
+
+        self.__min_object_confidence = 0.25 if 'MinObjectConfidence' not in self.__config['Landmarks']['Detection'] else self.__config['Landmarks']['Detection']['MinObjectConfidence']
         
-        self.__save_images = self.__config['SavePositioningImages']
-        self.__save_empty_images = self.__config['SaveEmptyPositioningImages']
+        self.__save_images = self.__config['Landmarks']['Detection']['SavePositioningImages']
+        self.__save_empty_images = self.__config['Landmarks']['Detection']['SaveEmptyPositioningImages']
 
         self.__newest_images = {} # one per camera, these are just the image locations
 
@@ -116,11 +116,11 @@ class PilotNavigation:
                 view_width=CameraInfo.get_resolution_width(config_id=self.__enabled_cameras[c]),
                 view_height=CameraInfo.get_resolution_height(config_id=self.__enabled_cameras[c]),
                 base_front=90.0,
-                use_multithreading=self.__config['MultithreadedPositioning'],
+                use_multithreading=self.__config['Positioning']['Multithreaded'],
                 estimator_mode = PilotNavigation.__get_estimator_mode(self.__estimator_mode),
-                max_lidar_drift_deg = self.__config['LidarMaxDriftDegrees'],
-                max_lidar_visual_variance_pct = self.__config['LidarMaxVisualDistVariancePct'],
-                adjust_for_altitude=self.__config['AdjustForAltitude']
+                max_lidar_drift_deg = self.__config['Lidar']['MaxDriftDegrees'],
+                max_lidar_visual_variance_pct = self.__config['Lidar']['MaxVisualDistVariancePct'],
+                adjust_for_altitude=self.__config['Positioning']['AdjustForAltitude']
             )        
 
     def __get_estimator_mode (estimator_mode_str):
@@ -130,6 +130,16 @@ class PilotNavigation:
             return EstimatorMode.VERY_PRECISE
         else:
             return EstimatorMode.PRECISE
+        
+    def __get_confidence (confidence_str):
+        if confidence_str.low() == 'medium':
+            return Confidence.CONFIDENCE_MEDIUM
+        if confidence_str.low() == 'low':
+            return Confidence.CONFIDENCE_LOW
+        if confidence_str.low() == 'high':
+            return Confidence.CONFIDENCE_HIGH
+        
+        return Confidence.CONFIDENCE_FACT
             
     def __get_camera (self, c):
         return self.__camera_manager.get_camera(c, camera_config=self.__enabled_cameras[c], auto_optimize_object_locator=self.__locator)
@@ -303,14 +313,12 @@ class PilotNavigation:
             self.__lidar_time = time.time()
         return self.__lidar_map
 
-    def get_coords_and_heading (self, min_num_landmarks = 2, allow_camera_reposition = True, cam_start_default_position = True, display_landmarks_on_vehicle= False):
+    def get_coords_and_heading (self, allow_camera_reposition = True, cam_start_default_position = True, display_landmarks_on_vehicle= False):
         if cam_start_default_position:
             # ensure cameras are at correct heading
             self.reposition_cameras()
 
         num_repositions_allowed = self.__get_num_alt_camera_headings() if allow_camera_reposition else 0
-
-        successes = 0
         attempts = 0
 
         x = None
@@ -319,7 +327,8 @@ class PilotNavigation:
         confidence = Confidence.CONFIDENCE_LOW
         basis = None
         
-        while confidence < Confidence.CONFIDENCE_MEDIUM and successes < self.__min_location_success and attempts < self.__max_location_attempts:
+        # keep looping until we get coordinates with target confidence or we hit max number of retries (in which case, we go with minimum confidence)
+        while confidence < self.__preferred_position_confidence and attempts < self.__max_position_attempts:
             if attempts > 0:
                 time.sleep(self.__delay_between_location_attempts)
 
@@ -328,8 +337,10 @@ class PilotNavigation:
             num_repositions_used = 0
             unique_landmark_ids = []
             combined_landmarks = []
+            landmark_preferences_met = False # do we have a great set of sightings to position
+            landmark_requirements_met = False # do we have a good enough set of sightings to position
 
-            while confidence < Confidence.CONFIDENCE_MEDIUM and successes < self.__min_location_success and num_repositions_used <= num_repositions_allowed and len(unique_landmark_ids) < self.__default_preferred_num_landmarks:
+            while confidence < self.__preferred_position_confidence and num_repositions_used <= num_repositions_allowed and landmark_preferences_met == False:
                 landmarks = self.locate_landmarks(display_on_vehicle=display_landmarks_on_vehicle)
                 
                 for c in landmarks:
@@ -346,18 +357,23 @@ class PilotNavigation:
                     if len(newly_found_landmarks) > 0:
                         combined_landmarks = combined_landmarks + self.__format_landmarks_for_position(located_objects=newly_found_landmarks,camera_heading=camera_heading)
                 
+                # get look at which tiers of landmarks we have
+                tiered_landmarks = self.__get_landmarks_by_tier(combined_landmarks=combined_landmarks)
+                landmark_preferences_met = self.__are_landmark_preferences_met(tiered_landmarks=tiered_landmarks)
+                landmark_requirements_met = landmark_requirements_met or self.__are_landmark_requirements_met(tiered_landmarks=tiered_landmarks)
+
                 # if we prefer to have more and there are repositions left, do that now
-                if len(unique_landmark_ids) < self.__default_preferred_num_landmarks and num_repositions_used < num_repositions_allowed:
+                if landmark_preferences_met == False and num_repositions_used < num_repositions_allowed:
                     logging.getLogger(__name__).info(f"Prefer more landmarks, only ({len(unique_landmark_ids)}) found. Repositioning to find more.")
                     logging.getLogger(__name__).info(f"Combined Landmarks: {combined_landmarks}")
                     # rotate the cameras to the next position
                     self.reposition_cameras(num_repositions_used)
                     num_repositions_used += 1
-                elif len(combined_landmarks) >= min_num_landmarks:
+                elif landmark_requirements_met:
                     logging.getLogger(__name__).info(f"Combined Landmarks: {combined_landmarks}")
                     x, y, heading, confidence, basis = self.get_coords_and_heading_for_landmarks (combined_landmarks=combined_landmarks, allow_lidar = True)
                     logging.getLogger(__name__).info(f"=== Coords: ({x} , {y})  Heading: {heading}, Confidence: {confidence}, Successes: {successes} ===")
-                    if x is not None and y is not None and heading is not None and confidence is not None and confidence >= self.__min_location_confidence:
+                    if x is not None and y is not None and heading is not None and confidence is not None and confidence >= self.__min_position_confidence:
                         # display on vehicle, if configured
                         self.__vehicle.display_position(x=x, y=y, heading=heading, wait_for_result = True) # if we dont wait for result, the repositino can fail
 
@@ -369,7 +385,7 @@ class PilotNavigation:
             if num_repositions_used > 0:
                 self.reposition_cameras()
         
-        if successes >= self.__min_location_success or confidence >= Confidence.CONFIDENCE_MEDIUM:
+        if confidence >= self.__min_position_confidence:
             if self.__pilot_logger is not None and x is not None and y is not None and heading is not None:
                 if self.__save_images:
                     views = []
@@ -409,6 +425,57 @@ class PilotNavigation:
         # not enough successes to report a location
         return None,None,None,None
 
+    def __are_landmark_requirements_met (self, tiered_landmarks):
+        if len(tiered_landmarks) < self.__config['Landmarks']['Minimum']:
+            return False
+
+        for tier_id in self.__config['Landmarks']['Tiers']:
+            this_tier_min = self.__config['Landmarks']['Tiers']['Minimum']
+            if tier_id not in tiered_landmarks or len(tiered_landmarks[tier_id]) < this_tier_min:
+                logging.getLogger(__name__).info(f"Less than required tier {tier_id} landmarks have been found")
+                return False
+
+        return True
+
+    def __are_landmark_preferences_met (self, tiered_landmarks):
+        if len(tiered_landmarks) < self.__config['Landmarks']['Preferred']:
+            return False
+
+        for tier_id in self.__config['Landmarks']['Tiers']:
+            this_tier_preferred = self.__config['Landmarks']['Tiers']['Preferred']
+            if tier_id not in tiered_landmarks or len(tiered_landmarks[tier_id]) < this_tier_preferred:
+                logging.getLogger(__name__).info(f"Less than preferred tier {tier_id} landmarks have been found")
+                return False
+
+        return True
+
+    # returns the landmarks grouped by tiers, with only one of each landmark (highest confidence)
+    def __get_landmarks_by_tier (self, combined_landmarks):
+        tiered_landmarks = {}
+        unique_landmarks = {}
+        
+
+        # first filter down to one unique instance per landmark
+        for lm in combined_landmarks:
+            for lid in lm:
+                if lid not in unique_landmarks or lm[lid]['confidence'] > unique_landmarks[lid]['confidence']:
+                    unique_landmarks[lid] = lm[lid]
+
+        # now group the landmarks by tier
+        for lid in unique_landmarks:
+            this_tier = "unknown"
+            if 'tier' in unique_landmarks[lid]:
+                this_tier = unique_landmarks[lid]['tier']
+            else:
+                this_tier = self.__field_map.get_landmark_tier(lid)
+
+            if this_tier in tiered_landmarks:
+                tiered_landmarks[this_tier].append(unique_landmarks[lid])
+            else:
+                tiered_landmarks[this_tier] = [unique_landmarks[lid],]
+
+        return tiered_landmarks
+
     def __select_top_landmarks (self, combined_landmarks, max_landmarks = 3):
         if len(combined_landmarks) <= max_landmarks:
             return combined_landmarks
@@ -428,7 +495,7 @@ class PilotNavigation:
                 found_priorities.append(this_priority)
                 prioritized_map[this_priority] = lm
         
-        found_priorities.sort(reverse=True)
+        found_priorities.sort() # 1 is top priority, higher numbers mean lower priority
         for priority in found_priorities[:max_landmarks]:
             top_landmarks.append(prioritized_map[priority])
         
@@ -467,6 +534,7 @@ class PilotNavigation:
             this_obj = copy.deepcopy(located_objects[lid])
             this_obj['camera_heading'] = camera_heading
             this_obj['priority'] = self.__field_map.get_landmark_priority(lid)
+            this_obj['tier'] = self.__field_map.get_landmark_tier(lid)
             as_list.append({lid:this_obj})
         
         return as_list

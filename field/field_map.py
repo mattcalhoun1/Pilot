@@ -139,6 +139,12 @@ class FieldMap:
             return landmark['priority']
         return 0
 
+    def get_landmark_tier (self, landmark_id):
+        if landmark_id in self.__landmarks and 'tier' in self.__landmarks[landmark_id]:
+            landmark = self.__landmarks[landmark_id]
+            return landmark['tier']
+        return "unknown"
+
     def is_landmark_lidar_visible (self, landmark_id):
         landmark = self.__landmarks[landmark_id]
         return 'lidar_visible' in landmark.keys() and landmark['lidar_visible']

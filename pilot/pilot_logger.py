@@ -8,7 +8,7 @@ class PilotLogger:
     def __init__(self, config_file, session_id = None):
         self.__load_config(config_file)
         self.__vehicle_id = self.__config['Vehicle']
-        self.__log_position_failures = self.__config['LogPositionFailures'] if 'LogPositionFailures' in self.__config else False
+        self.__log_position_failures = self.__config['Positioning']['LogPositionFailures'] if 'LogPositionFailures' in self.__config['Positioning'] else False
         self.__log_dir = self.__config['LogDirectory'] if 'LogDirectory' in self.__config else '/tmp'
         
         # for now, session is just current date

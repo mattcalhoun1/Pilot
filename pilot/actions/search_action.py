@@ -13,7 +13,7 @@ class SearchAction(ActionBase):
         self.__pilot_nav = pilot_nav
         self.__pilot_logger = pilot_logger
         self.__pilot_config = pilot_config
-        self.__lidar_enabled_search = pilot_config['LidarEnabledSearch']
+        self.__lidar_enabled_search = pilot_config['Lidar']['EnabledSearch']
 
         self.__camera_horz_fov = [
             CameraInfo.get_fov_horizontal(self.__pilot_config['Cameras']['Left']['Config']),

@@ -44,7 +44,6 @@ if __name__ == '__main__':
     try:
         while (go):
             x, y, heading, confidence = pilot_nav.get_coords_and_heading(
-                min_num_landmarks=2,
                 allow_camera_reposition=True,
                 cam_start_default_position=True,display_landmarks_on_vehicle=False
             )
