@@ -432,7 +432,8 @@ class PilotNavigation:
         for tier_id in self.__config['Landmarks']['Tiers']:
             this_tier_min = self.__config['Landmarks']['Tiers'][tier_id]['Minimum']
             if tier_id not in tiered_landmarks or len(tiered_landmarks[tier_id]) < this_tier_min:
-                logging.getLogger(__name__).info(f"Less than required tier {tier_id} landmarks have been found")
+                logging.getLogger(__name__).info(f"Less than required tier {tier_id} landmarks have been found.")
+                logging.getLogger(f"Tiered: {tiered_landmarks}")
                 return False
 
         return True
