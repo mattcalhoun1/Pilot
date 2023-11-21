@@ -359,8 +359,8 @@ class PilotNavigation:
                 
                 # get look at which tiers of landmarks we have
                 tiered_landmarks = self.__get_landmarks_by_tier(combined_landmarks=combined_landmarks)
-                landmark_preferences_met = self.__are_landmark_preferences_met(tiered_landmarks=tiered_landmarks)
-                landmark_requirements_met = landmark_requirements_met or self.__are_landmark_requirements_met(tiered_landmarks=tiered_landmarks)
+                landmark_preferences_met = self.__are_landmark_preferences_met(tiered_landmarks=tiered_landmarks, unique_landmarks=combined_landmarks)
+                landmark_requirements_met = landmark_requirements_met or self.__are_landmark_requirements_met(tiered_landmarks=tiered_landmarks, unique_landmarks=combined_landmarks)
 
                 # if we prefer to have more and there are repositions left, do that now
                 if landmark_preferences_met == False and num_repositions_used < num_repositions_allowed:
@@ -423,8 +423,8 @@ class PilotNavigation:
         # positioning failed
         return None,None,None,None
 
-    def __are_landmark_requirements_met (self, tiered_landmarks):
-        if len(tiered_landmarks) < self.__config['Landmarks']['Minimum']:
+    def __are_landmark_requirements_met (self, tiered_landmarks, unique_landmarks):
+        if len(unique_landmarks) < self.__config['Landmarks']['Minimum']:
             return False
 
         for tier_id in self.__config['Landmarks']['Tiers']:
@@ -435,15 +435,15 @@ class PilotNavigation:
 
         return True
 
-    def __are_landmark_preferences_met (self, tiered_landmarks):
-        if len(tiered_landmarks) < self.__config['Landmarks']['Preferred']:
+    def __are_landmark_preferences_met (self, tiered_landmarks, unique_landmarks):
+        if len(unique_landmarks) < self.__config['Landmarks']['Preferred']:
             return False
 
         for tier_id in self.__config['Landmarks']['Tiers']:
             this_tier_preferred = self.__config['Landmarks']['Tiers'][tier_id]['Preferred']
             logging.getLogger(__name__).info(f"Landmark Tier {tier_id} prefers: {this_tier_preferred}")
             if tier_id not in tiered_landmarks:
-                logging.getLogger("No landmarks from that tier found")
+                logging.getLogger(__name__).info("No landmarks from that tier found")
                 return False
             elif len(tiered_landmarks[tier_id]) < this_tier_preferred:
                 logging.getLogger(__name__).info(f"Less than preferred tier {tier_id} landmarks have been found ({len(tiered_landmarks[tier_id])})")
