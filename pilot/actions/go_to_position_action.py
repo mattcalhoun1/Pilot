@@ -12,6 +12,10 @@ class GoToPositionAction(ActionBase):
         self.__pilot_logger = pilot_logger
         self.__pilot_config = pilot_config
 
+        self.__driving_speed = self.__pilot_config['Driving']['GoSpeed']
+        self.__max_steps = self.__pilot_config['Driving']['GoMaxSteps']
+        self.__max_target_distance = self.__pilot_config['Driving']['GoTargetPositionDistance']
+
     def get_name (self):
         return "Go (x,y)"
 
@@ -20,22 +24,18 @@ class GoToPositionAction(ActionBase):
 
     def go_to_position (self, target_x : float, target_y : float):
         arrived = False
-        max_dist = 2 # lets be within 2 of the target_dist
         path_finder = PathFinder(field_map=self.__pilot_nav.get_field_map())
-        step_size_seconds = 2.0
-        speed = 1
-        max_steps = 10
         curr_step = 0
         
         if self.__vehicle.wait_for_ready () and self.__vehicle.get_all_configurations():
-            while not arrived and curr_step < max_steps:
+            while not arrived and curr_step < self.__max_steps:
                 curr_step += 1
                 last_x, last_y, last_heading, _,_ = self.__pilot_nav.get_last_coords_and_heading()
 
                 # grab lidar if available
                 lidar = self.__vehicle.get_live_lidar_map(10.0)
 
-                if path_finder.is_close_enough (last_x, last_y, target_x, target_y, max_dist):
+                if path_finder.is_close_enough (last_x, last_y, target_x, target_y, self.__max_target_distance):
                     logging.getLogger(__name__).info(f"Arrived at {last_x}, {last_y} in {curr_step} steps")
                     arrived = True
                 else:
@@ -52,7 +52,7 @@ class GoToPositionAction(ActionBase):
                             # turn the tank to to the correct heading
                             target_rotation = path_finder.find_rotation(last_leg_heading, target_heading)
                             if self.__vehicle.rotate(target_rotation, wait_for_result=True):
-                                if not self.__vehicle.forward_distance(speed=10.0, distance_units = target_dist, wait_for_result=True):
+                                if not self.__vehicle.forward_distance(speed=self.__driving_speed, distance_units = target_dist, wait_for_result=True):
                                     logging.getLogger(__name__).error("Vehicle failed to complete leg")
                             else:
                                 logging.getLogger(__name__).error("rotation failed")
@@ -60,6 +60,7 @@ class GoToPositionAction(ActionBase):
                         # update our position for the next distance check
                         self.__pilot_nav.get_coords_and_heading()
                     else:
+                        self.__vehicle.display_status("No Path", True)
                         logging.getLogger(__name__).info("No path to that location found, maybe blocked or out of bounds!!")
         else:
             logging.getLogger(__name__).info("Vehicle not ready!")
