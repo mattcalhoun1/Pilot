@@ -6,6 +6,7 @@ from pilot.actions.log_position_action import LogPositionAction
 from pilot.actions.do_nothing_action import DoNothingAction
 from pilot.actions.enter_controlled_mode_action import EnterControlledModeAction
 from pilot.actions.shutdown_action import ShutdownAction
+from pilot.actions.sleep_action import SleepAction
 from planner.assignment import *
 from pilot.pilot_navigation import PilotNavigation
 from pilot.pilot_logger import PilotLogger
@@ -39,6 +40,9 @@ class ActionFactory:
 
         elif command == TaskType.Shutdown:
             return ShutdownAction(vehicle=vehicle, pilot_nav=pilot_nav, pilot_logger = pilot_logger, pilot_config = pilot_config, pilot=pilot)
-        
+
+        elif command == TaskType.Sleep:
+            return SleepAction(vehicle=vehicle, pilot_nav=pilot_nav, pilot_logger = pilot_logger, pilot_config = pilot_config, pilot=pilot)
+
         logging.getLogger(__name__).warning(f"Command not supported: {command}")
         return DoNothingAction(vehicle=vehicle, pilot_nav=pilot_nav, pilot_logger = pilot_logger, pilot_config = pilot_config, pilot=pilot)

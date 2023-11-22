@@ -7,6 +7,7 @@ class TaskType:
     BeginControlledMode = 'CONTROLLED'
     BeginAutonomousMode = 'AUTONOMOUS'
     Shutdown = 'SHUTDOWN'
+    Sleep = 'SLEEP'
 
 class Task:
     def __init__(self, task_type, task_details = {}):
