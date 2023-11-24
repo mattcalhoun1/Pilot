@@ -317,11 +317,11 @@ class PilotNavigation:
                 else:
                     c_located_objects = self.__locator.find_objects_in_image_file(image_file = latest_image_files[locate_cycle], min_confidence = self.__min_object_confidence)
 
-                logging.getLogger(__name__).info(f"Camera {camera_id} found {len(c_located_objects)} objects: {c_located_objects}")
+                #logging.getLogger(__name__).info(f"Camera {camera_id} found {len(c_located_objects)} objects: {c_located_objects}")
                 combined_located_objects[camera_id] = {}
                 for f in self.__obj_search_finders[camera_id]:
                     f_located = f.locate_landmarks(object_locations=c_located_objects, id_filter=objects)
-                    logging.getLogger(__name__).info(f"Camera {camera_id} Landmarks: {f_located}")
+                    #logging.getLogger(__name__).info(f"Camera {camera_id} Landmarks: {f_located}")
                     for lid in f_located:
                         combined_located_objects[camera_id][lid] = f_located[lid]
                     #located_landmarks[c] = located_landmarks[c] + f.locate_landmarks(object_locations=c_located_objects)#, id_filter=['light'])
