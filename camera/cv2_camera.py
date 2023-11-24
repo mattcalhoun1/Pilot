@@ -48,12 +48,29 @@ class CV2Camera (Camera):
         
         return sharpened
 
+    def capture_image (self, preprocess = False, file_name = None):
+        buffer = self.__picam2.capture_buffer("lores")
+        grey = buffer[:self.__stride * self.__lowres_size[1]].reshape((self.__lowres_size[1], self.__stride))
+
+        if preprocess:
+            grey = self.preprocess_image(grey)
+
+        if file_name is not None:
+            np.save(file_name, grey)
+            #cv2.imwrite(file_name, grey)
+
+        return grey
+
+
     # captures an image buffer
-    def capture_image (self):
+    def capture_image (self, preprocess = False, file_name = None):
         grabbed, frame = self.read()
-        #if grabbed:
-        #    logging.getLogger(__name__).info(f"Image shape: {frame.shape}")
-        #    cv2.imwrite("/tmp/cv2img.png", frame)
+        if grabbed and preprocess:
+            frame = self.preprocess_image(frame)
+
+        if grabbed and file_name is not None:
+            cv2.imwrite(file_name, frame)
+
         return frame
 
     def __open(self, gstreamer_pipeline_string):

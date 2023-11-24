@@ -9,23 +9,33 @@ import logging
 from recognition.object_locator import ObjectLocator
 
 class TFLiteObjectLocator (ObjectLocator):
-    def __init__(self, model_configs = {}, keep_latest_image = True):
+    def __init__(self, model_configs = {}, keep_latest_image = True, preload_models = True):
         self.__models = {}
         self.__labels = {}
         self.__model_configs = model_configs
         self.__latest_image = None
         self.__keep_latest_image = keep_latest_image
         
-        for model_name in model_configs:
-            self.__labels[model_name] = self.read_label_file(model_configs[model_name]['LabelFile'])
-            if model_configs[model_name]['ModelType'] in ['tflite', 'lite']:
-                interpreter = tflite.Interpreter(model_path=model_configs[model_name]['ModelFile'], num_threads=4)
+        if preload_models:
+            for model_name in model_configs:
+                self.__load_model(model_name)
+
+    # unloads models so this locator can be pickled for multiprocessing            
+    def unload_models (self):
+        self.__models = {}
+        self.__labels = {}
+
+    def __load_model (self, model_name):
+        if model_name not in self.__labels:
+            # ensures the given model / labels are loaded
+            self.__labels[model_name] = self.read_label_file(self.__model_configs[model_name]['LabelFile'])
+            if self.__model_configs[model_name]['ModelType'] in ['tflite', 'lite']:
+                interpreter = tflite.Interpreter(model_path=self.__model_configs[model_name]['ModelFile'], num_threads=4)
                 interpreter.allocate_tensors()
                 self.__models[model_name] = interpreter
-                logging.getLogger(__name__).info(f"Model {model_name}: TFLite interpreter created.")
-            else:
-                raise Exception (f"Unknown model type: {model_configs[model_name]['ModelType']}")
-            
+                #logging.getLogger(__name__).info(f"Model {model_name}: TFLite interpreter loaded.")
+
+
     def find_objects_on_camera(self, camera, object_filter = None, min_confidence = 0.4):
         captured = camera.capture_image()
         if captured is not None:
@@ -37,6 +47,12 @@ class TFLiteObjectLocator (ObjectLocator):
     def get_latest_image (self):
         return self.__latest_image
 
+    def find_objects_in_image_file (self, image_file, object_filter = None, min_confidence = 0.4):
+        #image = cv2.imread(image_file)
+        image = np.load(image_file)
+        return self.find_objects_in_image(image = image, object_filter=object_filter, min_confidence=min_confidence)
+
+
     def find_objects_in_image(self, image, object_filter = None, min_confidence = 0.4):
         if self.__keep_latest_image:
             self.__latest_image = image # for retrieving later
@@ -47,7 +63,9 @@ class TFLiteObjectLocator (ObjectLocator):
         last_floating_model = None
         detected_objects = []
         
-        for m in self.__models:
+        for m in self.__model_configs:
+            #logging.getLogger(__name__).info(f"Checking model {m} for objects")
+            self.__load_model(m)
             interpreter = self.__models[m]
             input_details = interpreter.get_input_details()
             output_details = interpreter.get_output_details()

@@ -73,9 +73,10 @@ class MecCar(Arduino):
         else:
             self.send_message(f"GetCameras:none")
             start_time = time.time()
+            received_config = False
 
             if force_refresh or len(self.__camera_configs) == 0:
-                while time.time() - start_time < timeout:
+                while time.time() - start_time < timeout and received_config == False:
                     if self.has_message():
                         msg = self.get_message()
                         if msg.startswith(ArduinoConstants.MESSAGE_PREFIX_CAMERAS):
@@ -94,6 +95,7 @@ class MecCar(Arduino):
                                     'min_tilt':int(this_cam[4]),
                                     'max_tilt':int(this_cam[5]),
                                 }
+                            received_config = True
                         #else:
                         #    logging.getLogger(__name__).info(f"Received unexpected message: {msg}")
                     else:

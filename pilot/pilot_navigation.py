@@ -211,15 +211,22 @@ class PilotNavigation:
     def get_altitude (self):
         return self.__curr_altitude
     
+    def __prepare_for_multiprocessing (self):
+        # dump any potentially troubling items from the object graph so this object can be pickled
+        self.__locator.unload_models()
+
     # this locates landmarks on a single camera in a threadsafe way, so multiple
     # cameras can be 'queried' simultaneously
-    def locate_landmarks_on_camera (self, camera_id):
+    def locate_landmarks_on_camera (self, camera_id, latest_image_files = None):
         located_landmarks = {}
         try:
             # go through location cycle multiple times so smoothing can work
             c_located_objects = None
             for locate_cycle in range(self.__smoothing_cycles_per_image):
-                c_located_objects = self.__locator.find_objects_on_camera(camera=self.__get_camera(camera_id), min_confidence = self.__min_object_confidence)
+                if latest_image_files is None:
+                    c_located_objects = self.__locator.find_objects_on_camera(camera=self.__get_camera(camera_id), min_confidence = self.__min_object_confidence)
+                else:
+                    c_located_objects = self.__locator.find_objects_in_image_file(image_file = latest_image_files[locate_cycle], min_confidence = self.__min_object_confidence)
                 logging.getLogger(__name__).debug(f"Camera {camera_id} found {len(c_located_objects)} objects: {c_located_objects}")
                 located_landmarks[camera_id] = {}
                 for f in self.__finders[camera_id]:
@@ -260,29 +267,39 @@ class PilotNavigation:
         for c in self.__enabled_cameras:
             # Get each camera search going in separate threads
             if self.__mulithreaded_detection:
-                camera_searches.append((
-                    self,
-                    c
-                ))
+                # capture as many images as necessary for smoothing
+                images = []
+                for i in range(self.__smoothing_cycles_per_image):
+                    file_name = f'/tmp/{c}_processing_{i}.npy'
+                    img = self.__get_camera(c).capture_image (preprocess = True, file_name = file_name)
+                    if img is not None:
+                        images.append(file_name)
+                if len(images) >= self.__smoothing_cycles_per_image:
+                    camera_searches.append((
+                        self,
+                        c,
+                        images
+                    ))
             else:
                 camera_results = self.locate_landmarks_on_camera(c)
                 if c in camera_results:
                     consolidated_landmarks[c] = camera_results[c]
 
-            # consolidate results into a dictionary keyed by camera id
-            # if multithreading, we need to wait for results to come in
-            if self.__mulithreaded_detection:
-                pool = NavigationThreadManager.get_thread_pool()
-                async_results = pool.starmap_async(external_locate_landmarks, camera_searches)
-                logging.getLogger(__name__).info("Waiting for threads to finish landmark detection")
-                
-                try:
-                    for thread_result in async_results.get():
-                        for cid in thread_result:
-                            consolidated_landmarks[cid] = thread_result[cid]
-                except TimeoutError as te:
-                    # is the thread pool corrupt in this case? Does it have a zombie
-                    logging.getLogger(__name__).info("Timed out, some or all camera results may not be included")
+        # consolidate results into a dictionary keyed by camera id
+        # if multithreading, we need to wait for results to come in
+        if self.__mulithreaded_detection:
+            self.__prepare_for_multiprocessing()
+            pool = NavigationThreadManager.get_thread_pool()
+            async_results = pool.starmap_async(external_locate_landmarks, camera_searches)
+            logging.getLogger(__name__).info("Waiting for threads to finish landmark detection")
+            
+            try:
+                for thread_result in async_results.get():
+                    for cid in thread_result:
+                        consolidated_landmarks[cid] = thread_result[cid]
+            except TimeoutError as te:
+                # is the thread pool corrupt in this case? Does it have a zombie
+                logging.getLogger(__name__).info("Timed out, some or all camera results may not be included")
 
         return consolidated_landmarks
 
@@ -346,20 +363,25 @@ class PilotNavigation:
                 if c in camera_results:
                     all_objects[c] = camera_results[c]
 
-            # consolidate results into a dictionary keyed by camera id
-            # if multithreading, we need to wait for results to come in
-            if self.__mulithreaded_detection:
-                pool = NavigationThreadManager.get_thread_pool()
-                async_results = pool.starmap_async(external_locate_objects, camera_searches)
-                logging.getLogger(__name__).info("Waiting for threads to finish object search")
-                
-                try:
-                    for thread_result in async_results.get():
-                        for cid in thread_result:
-                            all_objects[cid] = thread_result[cid]
-                except TimeoutError as te:
-                    # is the thread pool corrupt in this case? Does it have a zombie
-                    logging.getLogger(__name__).info("Timed out, some or all camera results may not be included")
+        # consolidate results into a dictionary keyed by camera id
+        # if multithreading, we need to wait for results to come in
+        if self.__mulithreaded_detection:
+            for camera_id in self.__enabled_cameras:
+                # capture image from each camera and write to files
+                captured = self.__get_camera(camera_id).capture_image (preprocess = True, file_name = f'/tmp/{camera_id}_processing.png')
+
+            self.__prepare_for_multiprocessing()
+            pool = NavigationThreadManager.get_thread_pool()
+            async_results = pool.starmap_async(external_locate_objects, camera_searches)
+            logging.getLogger(__name__).info("Waiting for threads to finish object search")
+            
+            try:
+                for thread_result in async_results.get():
+                    for cid in thread_result:
+                        all_objects[cid] = thread_result[cid]
+            except TimeoutError as te:
+                # is the thread pool corrupt in this case? Does it have a zombie
+                logging.getLogger(__name__).info("Timed out, some or all camera results may not be included")
 
         return all_objects
     
@@ -372,7 +394,7 @@ class PilotNavigation:
             self.__lidar_time = time.time()
         return self.__lidar_map
 
-    def get_coords_and_heading (self, allow_camera_reposition = True, cam_start_default_position = True, display_landmarks_on_vehicle= False):
+    def get_coords_and_heading (self, allow_camera_reposition = True, cam_start_default_position = True):
         if cam_start_default_position:
             # ensure cameras are at correct heading
             self.reposition_cameras()
@@ -400,7 +422,7 @@ class PilotNavigation:
             landmark_requirements_met = False # do we have a good enough set of sightings to position
 
             while confidence < self.__preferred_position_confidence and num_repositions_used <= num_repositions_allowed and landmark_preferences_met == False:
-                landmarks = self.locate_landmarks(display_on_vehicle=display_landmarks_on_vehicle)
+                landmarks = self.locate_landmarks()
                 
                 for c in landmarks:
                     camera_heading = self.get_camera_heading(c)
@@ -426,7 +448,9 @@ class PilotNavigation:
                     logging.getLogger(__name__).info(f"Prefer more landmarks, only ({len(unique_landmark_ids)}) found. Repositioning to find more.")
                     logging.getLogger(__name__).info(f"Combined Landmarks: {combined_landmarks}")
                     # rotate the cameras to the next position
+                    logging.getLogger(__name__).info("Repositioning cameras")
                     self.reposition_cameras(num_repositions_used)
+                    logging.getLogger(__name__).info("Finished repositioning cameras")
                     num_repositions_used += 1
                 elif landmark_requirements_met:
                     logging.getLogger(__name__).info(f"Combined Landmarks: {combined_landmarks}")
@@ -595,8 +619,17 @@ class PilotNavigation:
         
         return as_list
 
-def external_locate_landmarks (pilot_nav_inst, camera_id):
-    return pilot_nav_inst.locate_landmarks_on_camera(camera_id)
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        #print(state.keys())
+        # Don't pickle anything not required to complete object detection in another process
+        del state["_PilotNavigation__camera_manager"]
+        del state["_PilotNavigation__resources"]
+        del state["_PilotNavigation__newest_images"]
+        return state
+    
+def external_locate_landmarks (pilot_nav_inst, camera_id, image_files):
+    return pilot_nav_inst.locate_landmarks_on_camera(camera_id, image_files)
 
 def external_locate_objects (pilot_nav_inst, objects, camera_id):
     return pilot_nav_inst.locate_objects_on_camera(objects, camera_id)

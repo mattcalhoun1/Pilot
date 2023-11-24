@@ -8,6 +8,7 @@ except:
 import time
 import logging
 from camera.camera import Camera
+import numpy as np
 
 # camera implementation based on picamera2 library, only for PI
 # it is able to apply picam v3 specific settings
@@ -116,9 +117,18 @@ class Picamera2Camera (Camera):
     def start_camera (self):
         self.__picam2.start()
 
-    def capture_image (self):
+    def capture_image (self, preprocess = False, file_name = None):
         buffer = self.__picam2.capture_buffer("lores")
         grey = buffer[:self.__stride * self.__lowres_size[1]].reshape((self.__lowres_size[1], self.__stride))
+
+        if preprocess:
+            grey = self.preprocess_image(grey)
+
+        if file_name is not None:
+            #cv2.imwrite(file_name, grey)
+            #np.ndarray.tofile(grey, file_name)
+            np.save(file_name, grey)
+
         return grey
 
     def preprocess_image (self, image):

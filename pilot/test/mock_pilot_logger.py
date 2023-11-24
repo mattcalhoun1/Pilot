@@ -7,7 +7,7 @@ class MockPilotLogger (PilotLogger):
         return True
         
     
-    def log_coordinates (self, map_id, x, y, heading):
+    def log_coordinates (self, map_id, x, y, heading, basis):
         return None
 
     def log_coordinates_and_images (self, map_id, x, y, heading, images, basis):
