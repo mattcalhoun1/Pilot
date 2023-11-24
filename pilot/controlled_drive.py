@@ -91,7 +91,7 @@ class ControllerListener(Controller):
         if not self.__is_busy():
             self.__set_busy()
             logging.getLogger(__name__).info("Locating landmarks")
-            self.__pilot_nav.locate_landmarks(display_on_vehicle=True)
+            self.__pilot_nav.locate_landmarks()
             self.__set_ready()
 
     def on_circle_press(self):
@@ -105,7 +105,7 @@ class ControllerListener(Controller):
             for o in field_map.get_searchable_objects():
                 find_objects.append(o)
             logging.getLogger(__name__).info(f"Locating any of the following objects: {o}")
-            self.__pilot_nav.locate_objects(objects=find_objects, display_on_vehicle=True)
+            self.__pilot_nav.locate_objects(objects=find_objects)
             self.__set_ready()
 
     def on_share_press(self):

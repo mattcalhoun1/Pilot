@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     try:
         while (go):
-            landmarks = pilot_nav.locate_landmarks(display_on_vehicle=False)
+            landmarks = pilot_nav.locate_landmarks()
             logging.getLogger(__name__).info(f"Reported Landmarks: {landmarks}")
             
             time.sleep(1)

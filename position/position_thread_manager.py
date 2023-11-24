@@ -16,14 +16,14 @@ class PositionThreadManager:
         pool_size = 3
         if PositionThreadManager.__thread_pool is None:
             atexit.register(PositionThreadManager.cleanup)
-            logging.getLogger(__name__).warning(f"Thread pool initializing with {pool_size} workers. This should only happen once.")
+            logging.getLogger(__name__).warning(f"Position thread pool initializing with {pool_size} workers. This should only happen once.")
             PositionThreadManager.__thread_pool = ThreadPool(pool_size)
         
         return PositionThreadManager.__thread_pool
     
     def cleanup ():
         if PositionThreadManager.__thread_pool is not None:
-            logging.getLogger(__name__).warning("Cleaning up thread pool")
+            logging.getLogger(__name__).warning("Cleaning up position thread pool")
             PositionThreadManager.__thread_pool.close()
             PositionThreadManager.__thread_pool.terminate()
             PositionThreadManager.__thread_pool = None

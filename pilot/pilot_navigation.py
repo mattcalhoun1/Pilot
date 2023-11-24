@@ -16,6 +16,7 @@ from field.field_map import FieldMap
 from navsvc.nav_service import NavService
 from pilot.pilot_resources import PilotResources
 from pilot.pilot_logger import PilotLogger
+from pilot.navigation_thread_manager import NavigationThreadManager
 import json
 import copy
 import os
@@ -57,6 +58,7 @@ class PilotNavigation:
         
         self.__save_images = self.__config['Landmarks']['Detection']['SavePositioningImages']
         self.__save_empty_images = self.__config['Landmarks']['Detection']['SaveEmptyPositioningImages']
+        self.__mulithreaded_detection = self.__config['Landmarks']['Detection']['Multithreaded']
 
         self.__newest_images = {} # one per camera, these are just the image locations
 
@@ -209,99 +211,156 @@ class PilotNavigation:
     def get_altitude (self):
         return self.__curr_altitude
     
-    def locate_landmarks (self, display_on_vehicle = False):
+    # this locates landmarks on a single camera in a threadsafe way, so multiple
+    # cameras can be 'queried' simultaneously
+    def locate_landmarks_on_camera (self, camera_id):
         located_landmarks = {}
-        for c in self.__enabled_cameras:
-            try:
-                # go through location cycle multiple times so smoothing can work
-                c_located_objects = None
-                for locate_cycle in range(self.__smoothing_cycles_per_image):
-                    c_located_objects = self.__locator.find_objects_on_camera(camera=self.__get_camera(c), min_confidence = self.__min_object_confidence)
-                    logging.getLogger(__name__).debug(f"Camera {c} found {len(c_located_objects)} objects: {c_located_objects}")
-                    located_landmarks[c] = {}
-                    for f in self.__finders[c]:
-                        f_located = f.locate_landmarks(object_locations=c_located_objects)
-                        #logging.getLogger(__name__).info(f"Camera {c} Landmarks: {f_located}")
-                        for lid in f_located:
-                            located_landmarks[c][lid] = f_located[lid]
-                        #located_landmarks[c] = located_landmarks[c] + f.locate_landmarks(object_locations=c_located_objects)#, id_filter=['light'])
-            
-                angles = None
-                distances = None
-                if self.__save_images or display_on_vehicle:
-                    angles = self.__position_est[c].extract_object_view_angles(
-                        located_objects = self.__format_landmarks_for_position (located_objects = located_landmarks[c], camera_heading = self.__camera_headings[c]), 
-                        add_relative_angles = True)
-                    distances = self.__position_est[c].extract_distances (view_angles=angles, view_altitude=self.get_altitude())
+        try:
+            # go through location cycle multiple times so smoothing can work
+            c_located_objects = None
+            for locate_cycle in range(self.__smoothing_cycles_per_image):
+                c_located_objects = self.__locator.find_objects_on_camera(camera=self.__get_camera(camera_id), min_confidence = self.__min_object_confidence)
+                logging.getLogger(__name__).debug(f"Camera {camera_id} found {len(c_located_objects)} objects: {c_located_objects}")
+                located_landmarks[camera_id] = {}
+                for f in self.__finders[camera_id]:
+                    f_located = f.locate_landmarks(object_locations=c_located_objects)
+                    #logging.getLogger(__name__).info(f"Camera {c} Landmarks: {f_located}")
+                    for lid in f_located:
+                        located_landmarks[camera_id][lid] = f_located[lid]
+                    #located_landmarks[c] = located_landmarks[c] + f.locate_landmarks(object_locations=c_located_objects)#, id_filter=['light'])
+        
+            angles = None
+            distances = None
+            if self.__save_images:
+                angles = self.__position_est[camera_id].extract_object_view_angles(
+                    located_objects = self.__format_landmarks_for_position (located_objects = located_landmarks[camera_id], camera_heading = self.__camera_headings[camera_id]), 
+                    add_relative_angles = True)
+                distances = self.__position_est[camera_id].extract_distances (view_angles=angles, view_altitude=self.get_altitude())
 
-                if display_on_vehicle:
-                    self.__vehicle.display_objects (obj_dist_map = distances, wait_for_result = True)
-
-                if self.__save_images:
-                    # save any images where landmarks were spotted, or all images if configured
-                    if len(located_landmarks[c]) > 0 or self.__save_empty_images:
-                        # save the image with bound boxes for inspection. the distance calculation can be slow!
-                        latest_img = self.__locator.get_latest_image()
-                        image_file = f"{self.__config['CacheLocations']['Images']}/coordinates_cam_{c}_{round(self.__camera_headings[c])}.png"
-                        LandmarkLabeler().export_labeled_image(
-                            image = latest_img,
-                            landmarks=located_landmarks[c],
-                            distances=distances,
-                            angles=angles,
-                            file_name=image_file)
-                        self.__newest_images[f"{c}_{round(self.__camera_headings[c])}"] = image_file
-            except Exception as e:
-                logging.getLogger(__name__).warning(f"Locate landmarks failed. Possibly camera glitch: {e}")
+                # save any images where landmarks were spotted, or all images if configured
+                if len(located_landmarks[camera_id]) > 0 or self.__save_empty_images:
+                    # save the image with bound boxes for inspection. the distance calculation can be slow!
+                    latest_img = self.__locator.get_latest_image()
+                    image_file = f"{self.__config['CacheLocations']['Images']}/coordinates_cam_{camera_id}_{round(self.__camera_headings[camera_id])}.png"
+                    LandmarkLabeler().export_labeled_image(
+                        image = latest_img,
+                        landmarks=located_landmarks[camera_id],
+                        distances=distances,
+                        angles=angles,
+                        file_name=image_file)
+                    self.__newest_images[f"{camera_id}_{round(self.__camera_headings[camera_id])}"] = image_file
+        except Exception as e:
+            logging.getLogger(__name__).warning(f"Locate landmarks failed. Possibly camera glitch: {e}")
         
         return located_landmarks
 
-    def locate_objects (self, objects, display_on_vehicle = False):
+    def locate_landmarks (self):
+        consolidated_landmarks = {} # keyed by camera id
+        camera_searches = [] # for multithreading
+        for c in self.__enabled_cameras:
+            # Get each camera search going in separate threads
+            if self.__mulithreaded_detection:
+                camera_searches.append((
+                    self,
+                    c
+                ))
+            else:
+                camera_results = self.locate_landmarks_on_camera(c)
+                if c in camera_results:
+                    consolidated_landmarks[c] = camera_results[c]
+
+            # consolidate results into a dictionary keyed by camera id
+            # if multithreading, we need to wait for results to come in
+            if self.__mulithreaded_detection:
+                pool = NavigationThreadManager.get_thread_pool()
+                async_results = pool.starmap_async(external_locate_landmarks, camera_searches)
+                logging.getLogger(__name__).info("Waiting for threads to finish landmark detection")
+                
+                try:
+                    for thread_result in async_results.get():
+                        for cid in thread_result:
+                            consolidated_landmarks[cid] = thread_result[cid]
+                except TimeoutError as te:
+                    # is the thread pool corrupt in this case? Does it have a zombie
+                    logging.getLogger(__name__).info("Timed out, some or all camera results may not be included")
+
+        return consolidated_landmarks
+
+    def locate_objects_on_camera (self, objects, camera_id):
         combined_located_objects = {}
 
         all_objects = {}
 
-        for c in self.__enabled_cameras:
-            try:
-                c_located_objects = self.__locator.find_objects_on_camera(camera=self.__get_camera(c), min_confidence = self.__min_object_confidence)
-                #logging.getLogger(__name__).info(f"Camera {c} found {len(c_located_objects)} objects: {c_located_objects}")
-                combined_located_objects[c] = {}
-                for f in self.__obj_search_finders[c]:
-                    f_located = f.locate_landmarks(object_locations=c_located_objects, id_filter=objects)
-                    #logging.getLogger(__name__).info(f"Camera {c} Landmarks: {f_located}")
-                    for lid in f_located:
-                        combined_located_objects[c][lid] = f_located[lid]
-                    #located_landmarks[c] = located_landmarks[c] + f.locate_landmarks(object_locations=c_located_objects)#, id_filter=['light'])
-            
-
-                angles = None
-                distances = None
-                if self.__save_images or display_on_vehicle:
-                    angles = self.__position_est[c].extract_object_view_angles(
-                        located_objects = self.__format_landmarks_for_position (located_objects = combined_located_objects[c], camera_heading = self.__camera_headings[c]), 
-                        add_relative_angles = True)
-                    distances = self.__position_est[c].extract_distances (view_angles=angles, view_altitude=self.get_altitude(), filter_unmapped_objects = False)
-
-                if display_on_vehicle:
-                    self.__vehicle.display_objects (obj_dist_map = distances, wait_for_result = True)
-
-                if self.__save_images:
-                    all_objects[c] = {
-                        'angles':angles,
-                        'distances':distances
-                    }
-
-                    # save the image with bound boxes for inspection
-                    latest_img = self.__locator.get_latest_image()
-                    image_file = f"{self.__config['CacheLocations']['Images']}/search_cam_{c}.png"
-                    ObjectSearchLabeler().export_labeled_image(
-                        image = latest_img,
-                        landmarks=combined_located_objects[c],
-                        distances=distances,
-                        angles=angles,
-                        file_name=image_file)
-            except Exception as e:
-                logging.getLogger(__name__).warning(f"Locate objects failed. Possibly camera glitch: {e}")
+        try:
+            c_located_objects = self.__locator.find_objects_on_camera(camera=self.__get_camera(camera_id), min_confidence = self.__min_object_confidence)
+            #logging.getLogger(__name__).info(f"Camera {c} found {len(c_located_objects)} objects: {c_located_objects}")
+            combined_located_objects[camera_id] = {}
+            for f in self.__obj_search_finders[camera_id]:
+                f_located = f.locate_landmarks(object_locations=c_located_objects, id_filter=objects)
+                #logging.getLogger(__name__).info(f"Camera {c} Landmarks: {f_located}")
+                for lid in f_located:
+                    combined_located_objects[camera_id][lid] = f_located[lid]
+                #located_landmarks[c] = located_landmarks[c] + f.locate_landmarks(object_locations=c_located_objects)#, id_filter=['light'])
         
+
+            angles = None
+            distances = None
+            if self.__save_images:
+                angles = self.__position_est[camera_id].extract_object_view_angles(
+                    located_objects = self.__format_landmarks_for_position (located_objects = combined_located_objects[camera_id], camera_heading = self.__camera_headings[camera_id]), 
+                    add_relative_angles = True)
+                distances = self.__position_est[camera_id].extract_distances (view_angles=angles, view_altitude=self.get_altitude(), filter_unmapped_objects = False)
+                all_objects[camera_id] = {
+                    'angles':angles,
+                    'distances':distances
+                }
+
+                # save the image with bound boxes for inspection
+                latest_img = self.__locator.get_latest_image()
+                image_file = f"{self.__config['CacheLocations']['Images']}/search_cam_{camera_id}.png"
+                ObjectSearchLabeler().export_labeled_image(
+                    image = latest_img,
+                    landmarks=combined_located_objects[camera_id],
+                    distances=distances,
+                    angles=angles,
+                    file_name=image_file)
+        except Exception as e:
+            logging.getLogger(__name__).warning(f"Locate objects failed. Possibly camera glitch: {e}")
+        
+        return all_objects
+
+    def locate_objects (self, objects):
+        all_objects = {}
+
+        camera_searches = [] # for multithreading
+        for c in self.__enabled_cameras:
+            # Get each camera search going in separate threads
+            if self.__mulithreaded_detection:
+                camera_searches.append((
+                    self,
+                    objects,
+                    c
+                ))
+            else:
+                camera_results = self.locate_objects_on_camera(objects, c)
+                if c in camera_results:
+                    all_objects[c] = camera_results[c]
+
+            # consolidate results into a dictionary keyed by camera id
+            # if multithreading, we need to wait for results to come in
+            if self.__mulithreaded_detection:
+                pool = NavigationThreadManager.get_thread_pool()
+                async_results = pool.starmap_async(external_locate_objects, camera_searches)
+                logging.getLogger(__name__).info("Waiting for threads to finish object search")
+                
+                try:
+                    for thread_result in async_results.get():
+                        for cid in thread_result:
+                            all_objects[cid] = thread_result[cid]
+                except TimeoutError as te:
+                    # is the thread pool corrupt in this case? Does it have a zombie
+                    logging.getLogger(__name__).info("Timed out, some or all camera results may not be included")
+
         return all_objects
     
     def invalidate_position (self):
@@ -535,3 +594,12 @@ class PilotNavigation:
             as_list.append({lid:this_obj})
         
         return as_list
+
+def external_locate_landmarks (pilot_nav_inst, camera_id):
+    return pilot_nav_inst.locate_landmarks_on_camera(camera_id)
+
+def external_locate_objects (pilot_nav_inst, objects, camera_id):
+    return pilot_nav_inst.locate_objects_on_camera(objects, camera_id)
+
+if __name__ == "__main__":
+    print("in main")
