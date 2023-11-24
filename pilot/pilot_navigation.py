@@ -58,7 +58,8 @@ class PilotNavigation:
         
         self.__save_images = self.__config['Landmarks']['Detection']['SavePositioningImages']
         self.__save_empty_images = self.__config['Landmarks']['Detection']['SaveEmptyPositioningImages']
-        self.__mulithreaded_detection = self.__config['Landmarks']['Detection']['Multithreaded']
+        self.__multithreaded_positioning = self.__config['Landmarks']['Detection']['MultithreadedPositioning']
+        self.__multithreaded_search = self.__config['Landmarks']['Detection']['MultithreadedSearch']
 
         self.__newest_images = {} # one per camera, these are just the image locations
 
@@ -266,7 +267,7 @@ class PilotNavigation:
         camera_searches = [] # for multithreading
         for c in self.__enabled_cameras:
             # Get each camera search going in separate threads
-            if self.__mulithreaded_detection:
+            if self.__multithreaded_positioning:
                 # capture as many images as necessary for smoothing
                 images = []
                 for i in range(self.__smoothing_cycles_per_image):
@@ -287,7 +288,7 @@ class PilotNavigation:
 
         # consolidate results into a dictionary keyed by camera id
         # if multithreading, we need to wait for results to come in
-        if self.__mulithreaded_detection:
+        if self.__multithreaded_positioning:
             self.__prepare_for_multiprocessing()
             pool = NavigationThreadManager.get_thread_pool()
             async_results = pool.starmap_async(external_locate_landmarks, camera_searches)
@@ -356,7 +357,7 @@ class PilotNavigation:
         camera_searches = [] # for multithreading
         for c in self.__enabled_cameras:
             # Get each camera search going in separate threads
-            if self.__mulithreaded_detection:
+            if self.__multithreaded_search:
                 # capture as many images as necessary for smoothing
                 images = []
                 for i in range(self.__smoothing_cycles_per_image):
@@ -379,7 +380,7 @@ class PilotNavigation:
 
         # consolidate results into a dictionary keyed by camera id
         # if multithreading, we need to wait for results to come in
-        if self.__mulithreaded_detection:
+        if self.__multithreaded_search:
             self.__prepare_for_multiprocessing()
             pool = NavigationThreadManager.get_thread_pool()
             async_results = pool.starmap_async(external_locate_objects, camera_searches)
@@ -393,6 +394,23 @@ class PilotNavigation:
 
         return all_objects
 
+    def locate_objects_multi_angles (self, objects):
+        # begin at default heading
+        self.reposition_cameras()
+        found_objects = None
+
+        num_repositions_allowed = self.__get_num_alt_camera_headings()
+        num_repositions_used = 0
+        found = False
+
+        while found == False and num_repositions_used <= num_repositions_allowed:
+            found_objects = self.locate_objects(objects)
+            found = len(found_objects) > 0
+            if found == False:
+                self.reposition_cameras(num_repositions_used)
+                num_repositions_used += 1
+
+        return found_objects
     
     def invalidate_position (self):
         self.__lidar_map = None
@@ -457,9 +475,7 @@ class PilotNavigation:
                     logging.getLogger(__name__).info(f"Prefer more landmarks, only ({len(unique_landmark_ids)}) found. Repositioning to find more.")
                     logging.getLogger(__name__).info(f"Combined Landmarks: {combined_landmarks}")
                     # rotate the cameras to the next position
-                    logging.getLogger(__name__).info("Repositioning cameras")
                     self.reposition_cameras(num_repositions_used)
-                    logging.getLogger(__name__).info("Finished repositioning cameras")
                     num_repositions_used += 1
                 elif landmark_requirements_met:
                     logging.getLogger(__name__).info(f"Combined Landmarks: {combined_landmarks}")

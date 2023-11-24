@@ -14,6 +14,9 @@ class SearchAction(ActionBase):
         self.__pilot_logger = pilot_logger
         self.__pilot_config = pilot_config
         self.__lidar_enabled_search = pilot_config['Lidar']['EnabledSearch']
+        self.__lidar_max_age = pilot_config['Lidar']['MaxAge']
+        self.__lidar_drift_tolerance = pilot_config['Lidar']['MaxDriftDegrees'],
+        self.__lidar_visual_variance_pct = pilot_config['Lidar']['MaxVisualDistVariancePct'],
 
         self.__camera_horz_fov = [
             CameraInfo.get_fov_horizontal(self.__pilot_config['Cameras']['Left']['Config']),
@@ -30,7 +33,69 @@ class SearchAction(ActionBase):
                                )
         return self.search(params['objects'])
 
-    def search (self, objects, start_heading = 1.0, end_heading = -1.0):
+    def search (self, objects):
+        if self.__vehicle.wait_for_ready() and self.__vehicle.get_all_configurations():
+            logging.getLogger(__name__).info(f"Searching for {objects}")
+
+            located_objects = self.__pilot_nav.locate_objects_multi_angles(objects=objects)
+            if len(located_objects) > 0:
+                logging.getLogger(__name__).info(f"Located {len(located_objects)} Objects In This Space!")
+
+                # determine actual position/heading so we can record good info about this
+                # assume location was record prior to beginning this search
+                x, y, heading, confidence, coord_age = self.__pilot_nav.get_last_coords_and_heading()
+
+                for cam in located_objects:
+                    angles = located_objects[cam]['angles']
+                    distances = located_objects[cam]['distances']
+
+                    for obj_id in angles:
+                        obj_type = obj_id.split('.')[0]
+                        obj_rel_deg = angles[obj_id][0]['image_heading'] + angles[obj_id][0]['image_rel_deg']
+                        obj_est_dist = distances[obj_id]['ground']
+                        logging.getLogger(__name__).info(f"Current Location ({x},{y}) Heading {heading} ==> Obj:{obj_type} : Relative: {obj_rel_deg}, Dist: {obj_est_dist}")
+
+                        obj_veh_relative_heading = self.__get_vehicle_relative_heading (obj_rel_deg)
+                        logging.getLogger(__name__).info(f"Object Vehicle Relative (vehicle centric): {obj_veh_relative_heading}")
+
+                        logging.getLogger(__name__).info(f"Angles: {angles[obj_id][0]}")
+
+                        est_x, est_y = self.get_object_x_y(heading, x, y, obj_dist=obj_est_dist, obj_degrees = obj_rel_deg)
+                        logging.getLogger(__name__).info(f"Object estimated position: {(est_x, est_y)}")
+
+                        obj_est_dist_mm = self.__in_to_mm(obj_est_dist)
+
+                        # wait as long as necessary to allow lidar to update
+                        lidar_dist = -1.0
+                        if self.__lidar_enabled_search:
+                            lidar_angle, lidar_dist = self.get_lidar_measurement(
+                                degrees = obj_veh_relative_heading,
+                                angle_tolerance = self.__lidar_drift_tolerance,
+                                expected_distance_mm = obj_est_dist_mm,
+                                distance_tolerance=obj_est_dist_mm * self.__lidar_visual_variance_pct,
+                                max_age_millis = int(self.__lidar_max_age * 1000)
+                            )
+
+                        self.__pilot_logger.log_search_hit (
+                            map_id = self.__pilot_nav.get_map_id(), 
+                            object_type = obj_type,
+                            est_visual_distance = obj_est_dist,
+                            est_lidar_dist = lidar_dist, 
+                            vehicle_relative_heading = obj_veh_relative_heading,
+                            est_x = est_x,
+                            est_y = est_y,
+                            vehicle_x = x,
+                            vehicle_y = y,
+                            vehicle_heading = heading, 
+                            confidence = confidence,
+                            camera_id = cam,
+                            camera_angle = self.__get_vehicle_relative_heading(self.__pilot_nav.get_camera_heading(cam)),
+                            image_file = f"{self.__pilot_config['CacheLocations']['Images']}/search_cam_{cam}.png",
+                            image_format = 'png'
+                        )
+
+
+    def rotation_search (self, objects, start_heading = 1.0, end_heading = -1.0):
         if self.__vehicle.wait_for_ready() and self.__vehicle.get_all_configurations():
             logging.getLogger(__name__).info(f"Searching for {objects}")
             rotation_amount = 0
