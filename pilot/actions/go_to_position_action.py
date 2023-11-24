@@ -16,6 +16,9 @@ class GoToPositionAction(ActionBase):
         self.__max_steps = self.__pilot_config['Driving']['GoMaxSteps']
         self.__max_target_distance = self.__pilot_config['Driving']['GoTargetPositionDistance']
 
+        self.__wanted_angle_allowance = 3.0 # if we are this many degrees +/- the desired heading, it's ok to go ahead
+        self.__max_leg_attempts = 7 # max number of times to attempt rotate or go forward
+
     def get_name (self):
         return "Go (x,y)"
 
@@ -43,19 +46,40 @@ class GoToPositionAction(ActionBase):
                     paths = path_finder.find_potential_paths(last_x, last_y, target_x, target_y, lidar_map=lidar, current_heading=last_heading)
                     #target_heading, target_dist = path_finder.find_direct_path(last_x, last_y, target_x, target_y)
                     if len(paths) > 0:
-                        logging.getLogger(__name__).info(f"Selected Path: {paths[0]}")
-                        last_leg_heading = last_heading
+                        selected_path = paths[0]
+                        logging.getLogger(__name__).info(f"Selected Path: {selected_path}")
 
-                        for target_heading,target_dist in paths[0]:
+                        leg_id = 0
+                        leg_attempts = 0
+                        while leg_id < len(selected_path) and leg_attempts < self.__max_leg_attempts:
+                            target_heading,target_dist = selected_path[leg_id]
                             logging.getLogger(__name__).info(f"Head {target_heading} degrees for {target_dist} distance")
 
-                            # turn the tank to to the correct heading
+                            if leg_id != 0 or leg_attempts != 0:
+                                # update the heading, since we've moved since last check
+                                self.__pilot_nav.get_coords_and_heading()
+                                last_x, last_y, last_heading, _,_ = self.__pilot_nav.get_last_coords_and_heading()
+                            last_leg_heading = last_heading
+
+                            # turn the tank to to the correct heading, repeat until we are facing close to hte correct 
+                            # direction
                             target_rotation = path_finder.find_rotation(last_leg_heading, target_heading)
-                            if self.__vehicle.rotate(target_rotation, wait_for_result=True):
+                            if abs(target_rotation) <= self.__wanted_angle_allowance:
+                                logging.getLogger(__name__).info(f"Wanted heading requires rotation of {target_rotation}, which is within our heading allowance, so will go forward.")
                                 if not self.__vehicle.forward_distance(speed=self.__driving_speed, distance_units = target_dist, wait_for_result=True):
                                     logging.getLogger(__name__).error("Vehicle failed to complete leg")
+                                else:
+                                    # move onto the next leg
+                                    leg_id += 1
+                                    leg_attempts = 0
                             else:
-                                logging.getLogger(__name__).error("rotation failed")
+                                logging.getLogger(__name__).info(f"Rotation of {target_rotation} is required.")
+                                if self.__vehicle.rotate(target_rotation, wait_for_result=True):
+                                    logging.getLogger(__name__).info("Rotation complete. Checking updated heading")
+                                    leg_attempts += 1
+                                else:
+                                    logging.getLogger(__name__).error("rotation failed")
+                                    leg_attempts += 1
                             
                         # update our position for the next distance check
                         self.__pilot_nav.get_coords_and_heading()
