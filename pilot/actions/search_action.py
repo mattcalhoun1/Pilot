@@ -15,8 +15,8 @@ class SearchAction(ActionBase):
         self.__pilot_config = pilot_config
         self.__lidar_enabled_search = pilot_config['Lidar']['EnabledSearch']
         self.__lidar_max_age = pilot_config['Lidar']['MaxAge']
-        self.__lidar_drift_tolerance = pilot_config['Lidar']['MaxDriftDegrees'],
-        self.__lidar_visual_variance_pct = pilot_config['Lidar']['MaxVisualDistVariancePct'],
+        self.__lidar_drift_tolerance = pilot_config['Lidar']['MaxDriftDegrees']
+        self.__lidar_visual_variance_pct = pilot_config['Lidar']['MaxVisualDistVariancePct']
 
         self.__camera_horz_fov = [
             CameraInfo.get_fov_horizontal(self.__pilot_config['Cameras']['Left']['Config']),
@@ -93,7 +93,8 @@ class SearchAction(ActionBase):
                             image_file = f"{self.__pilot_config['CacheLocations']['Images']}/search_cam_{cam}.png",
                             image_format = 'png'
                         )
-
+            return True # search is successful, even if we didnt find anything
+        return False
 
     def rotation_search (self, objects, start_heading = 1.0, end_heading = -1.0):
         if self.__vehicle.wait_for_ready() and self.__vehicle.get_all_configurations():

@@ -59,6 +59,8 @@ class PilotNavigation:
         self.__save_images = self.__config['Landmarks']['Detection']['SavePositioningImages']
         self.__save_empty_images = self.__config['Landmarks']['Detection']['SaveEmptyPositioningImages']
         self.__multithreaded_positioning = self.__config['Landmarks']['Detection']['MultithreadedPositioning']
+
+        self.__save_search_images = self.__config['Landmarks']['Detection']['SaveSearchImages']
         self.__multithreaded_search = self.__config['Landmarks']['Detection']['MultithreadedSearch']
 
         self.__newest_images = {} # one per camera, these are just the image locations
@@ -315,19 +317,19 @@ class PilotNavigation:
                 else:
                     c_located_objects = self.__locator.find_objects_in_image_file(image_file = latest_image_files[locate_cycle], min_confidence = self.__min_object_confidence)
 
-                #logging.getLogger(__name__).info(f"Camera {c} found {len(c_located_objects)} objects: {c_located_objects}")
+                logging.getLogger(__name__).info(f"Camera {camera_id} found {len(c_located_objects)} objects: {c_located_objects}")
                 combined_located_objects[camera_id] = {}
                 for f in self.__obj_search_finders[camera_id]:
                     f_located = f.locate_landmarks(object_locations=c_located_objects, id_filter=objects)
-                    #logging.getLogger(__name__).info(f"Camera {c} Landmarks: {f_located}")
+                    logging.getLogger(__name__).info(f"Camera {camera_id} Landmarks: {f_located}")
                     for lid in f_located:
                         combined_located_objects[camera_id][lid] = f_located[lid]
                     #located_landmarks[c] = located_landmarks[c] + f.locate_landmarks(object_locations=c_located_objects)#, id_filter=['light'])
         
-
-            angles = None
-            distances = None
-            if self.__save_images:
+            # if the object was found after applying filtering and smoothing
+            if len(combined_located_objects[camera_id]) > 0:
+                angles = None
+                distances = None
                 angles = self.__position_est[camera_id].extract_object_view_angles(
                     located_objects = self.__format_landmarks_for_position (located_objects = combined_located_objects[camera_id], camera_heading = self.__camera_headings[camera_id]), 
                     add_relative_angles = True)
@@ -337,15 +339,16 @@ class PilotNavigation:
                     'distances':distances
                 }
 
-                # save the image with bound boxes for inspection
-                latest_img = self.__locator.get_latest_image()
-                image_file = f"{self.__config['CacheLocations']['Images']}/search_cam_{camera_id}.png"
-                ObjectSearchLabeler().export_labeled_image(
-                    image = latest_img,
-                    landmarks=combined_located_objects[camera_id],
-                    distances=distances,
-                    angles=angles,
-                    file_name=image_file)
+                if self.__save_search_images:
+                    # save the image with bound boxes for inspection
+                    latest_img = self.__locator.get_latest_image()
+                    image_file = f"{self.__config['CacheLocations']['Images']}/search_cam_{camera_id}.png"
+                    ObjectSearchLabeler().export_labeled_image(
+                        image = latest_img,
+                        landmarks=combined_located_objects[camera_id],
+                        distances=distances,
+                        angles=angles,
+                        file_name=image_file)
         except Exception as e:
             logging.getLogger(__name__).warning(f"Locate objects failed. Possibly camera glitch: {e}")
         
