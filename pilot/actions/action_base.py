@@ -2,10 +2,9 @@ import logging
 from pilot.pilot_navigation import PilotNavigation
 from pilot.pilot_logger import PilotLogger
 from pilot.path_finder import PathFinder
-from pilot.pilot import Pilot
 
 class ActionBase:
-    def __init__(self, vehicle, pilot_nav : PilotNavigation, pilot_logger : PilotLogger, pilot_config, pilot : Pilot) :
+    def __init__(self, vehicle, pilot_nav : PilotNavigation, pilot_logger : PilotLogger, pilot_config, pilot) :
         self.__vehicle = vehicle
         self.__pilot = pilot
         self.__pilot_nav = pilot_nav
@@ -37,7 +36,7 @@ class ActionBase:
     def get_vehicle (self):
         return self.__vehicle
     
-    def get_pilot (self) -> Pilot:
+    def get_pilot (self):
         return self.__pilot
     
     def get_pilot_nav (self) -> PilotNavigation:
