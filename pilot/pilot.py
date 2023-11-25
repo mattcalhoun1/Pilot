@@ -15,6 +15,7 @@ class Pilot:
         self.__running = True
         self.__vehicle = vehicle
         self.__load_config(config_file=config_file)
+        self.__action_factory = ActionFactory()
 
         # these are needed for the search function. maybe refactor out of here
         self.__default_camera_positions = [ # these are vehicle-centric, meaning 0 is front. navigation considers 90 the front, so its different
@@ -34,7 +35,7 @@ class Pilot:
         return False
 
     def __execute_step (self, assignment, command, params, pilot_nav):
-        action_handler = ActionFactory().get_action_for(
+        action_handler = self.get_action_factory().get_action_for(
             command = command,
             params = params,
             vehicle = self.__vehicle,
@@ -51,6 +52,9 @@ class Pilot:
             self.__resources.complete_assignment(assignment)
 
         return action_handler.execute(params)
+
+    def get_action_factory (self):
+        return self.__action_factory
 
     def is_alive (self):
         # gets switched to false with control+c

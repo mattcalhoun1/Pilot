@@ -3,7 +3,6 @@ from pilot.pilot_navigation import PilotNavigation
 from pilot.pilot_logger import PilotLogger
 from pilot.path_finder import PathFinder
 from pilot.actions.action_base import ActionBase
-from pilot.actions.action_factory import ActionFactory
 from planner.assignment import *
 
 class GoToPositionAction(ActionBase):
@@ -75,7 +74,7 @@ class GoToPositionAction(ActionBase):
 
                             # face the given heading
                             face_heading_params = {"heading":leg_heading}
-                            face_heading_action = ActionFactory().get_secondary_action(command=TaskType.FaceHeading, params=face_heading_params, base_action=self)
+                            face_heading_action = self.get_pilot().get_action_factory().get_secondary_action(command=TaskType.FaceHeading, params=face_heading_params, base_action=self)
                             if face_heading_action.execute(params=face_heading_params):
                                 logging.getLogger(__name__).info(f"Face heading {leg_heading} was successful. driving a safe distance of {safe_dist}")
                                 # we should now be facing the correct heading. Ok to go forward
@@ -102,6 +101,6 @@ class GoToPositionAction(ActionBase):
             logging.getLogger(__name__).info("Vehicle not ready!")
         
         self.get_pilot_nav().invalidate_position()
-        
+
         return arrived
 
