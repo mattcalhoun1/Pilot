@@ -49,13 +49,13 @@ class ActionBase:
         return self.__pilot_config
    
     def get_vehicle_height (self) -> float:
-        return self.__pilot_config['Vehicle']['Height']
+        return self.__pilot_config['VehicleShape']['Height']
 
     def get_vehicle_width (self) -> float:
-        return self.__pilot_config['Vehicle']['Width']
+        return self.__pilot_config['VehicleShape']['Width']
 
     def get_vehicle_length (self) -> float:
-        return self.__pilot_config['Vehicle']['Length']
+        return self.__pilot_config['VehicleShape']['Length']
     
     def get_path_finder (self) -> PathFinder:
         return PathFinder(
