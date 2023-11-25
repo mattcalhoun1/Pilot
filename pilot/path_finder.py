@@ -27,7 +27,7 @@ class PathFinder:
         if option1 < 0:
             option2 = 360 - abs(option1)
         
-        #logging.getLogger(__name__).info(f"From {current_heading} to {target_heading}, option1: {option1}, option2: {option2})")
+        logging.getLogger(__name__).info(f"From {current_heading} to {target_heading}, option1: {option1}, option2: {option2})")
         
         return option1 if abs(option1) < abs(option2) else option2
             
