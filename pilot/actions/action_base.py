@@ -78,7 +78,7 @@ class ActionBase:
         found_position = False
         adjustments = 0
         while not found_position and adjustments <= self.__max_positioning_adjustments:
-            new_x, new_y, new_heading, new_conf, new_basis = self.get_pilot_nav().get_coords_and_heading(preferred_confidence=self.__get_driving_confidence())
+            new_x, new_y, new_heading, new_conf = self.get_pilot_nav().get_coords_and_heading(preferred_confidence=self.__get_driving_confidence())
             if new_x is None and adjustments < self.__max_positioning_adjustments:
                 adjustments += 1
                 adjust_action = self.get_pilot().get_action_factory().get_secondary_action(command=TaskType.AdjustRandomly, params={}, base_action=self)
