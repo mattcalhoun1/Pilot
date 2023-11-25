@@ -22,7 +22,7 @@ class FacePositionAction(ActionBase):
         if self.get_vehicle().wait_for_ready ():
             last_x, last_y, last_heading, _,_ = self.get_pilot_nav().get_last_coords_and_heading()
 
-            target_heading, target_dist, x, y = path_finder.find_direct_path(last_x, last_y, target_x, target_y)
+            target_heading, target_dist = path_finder.find_direct_path(last_x, last_y, target_x, target_y)
 
             # use the face heading action to complete
             face_heading_params = {'heading':target_heading}
