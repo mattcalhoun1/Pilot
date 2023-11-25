@@ -487,7 +487,12 @@ class PilotNavigation:
                     if x is not None and y is not None and heading is not None and confidence is not None and confidence >= self.__min_position_confidence:
                         # display on vehicle, if configured
                         self.__vehicle.display_position(x=x, y=y, heading=heading, wait_for_result = True) # if we dont wait for result, the repositino can fail
+                    elif num_repositions_used < num_repositions_allowed:
+                        self.reposition_cameras(num_repositions_used)
+                        num_repositions_used += 1
                 else:
+                    if num_repositions_used < num_repositions_allowed:
+                        self.reposition_cameras(num_repositions_used)
                     num_repositions_used += 1
 
             # if we had to move the cameras, set them back to their default location
