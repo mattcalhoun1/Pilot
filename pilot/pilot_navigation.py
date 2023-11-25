@@ -55,6 +55,7 @@ class PilotNavigation:
         self.__preferred_position_confidence = PilotNavigation.__get_confidence(self.__config['Positioning']['PreferredPositionConfidence'])
 
         self.__min_object_confidence = 0.25 if 'MinObjectConfidence' not in self.__config['Landmarks']['Detection'] else self.__config['Landmarks']['Detection']['MinObjectConfidence']
+        self.__max_positioning_landmarks = self.__config['Landmarks']['Maximum']
         
         self.__save_images = self.__config['Landmarks']['Detection']['SavePositioningImages']
         self.__save_empty_images = self.__config['Landmarks']['Detection']['SaveEmptyPositioningImages']
@@ -483,6 +484,11 @@ class PilotNavigation:
                 elif landmark_requirements_met:
                     logging.getLogger(__name__).info(f"Combined Landmarks: {combined_landmarks}")
                     x, y, heading, confidence, basis = self.get_coords_and_heading_for_landmarks (combined_landmarks=combined_landmarks, allow_lidar = True)
+                    if x is None and len(combined_landmarks) > self.self.__config['Landmarks']['Minimum']:
+                        # One of the landmarks may be bad. Try trimming the lowest hanging one
+                        logging.getLogger(__name__).info(f"Positioning failed, looks like possibly an invalid landmark value. Trimming the lowest one and trying again.")
+                        x, y, heading, confidence, basis = self.get_coords_and_heading_for_landmarks (combined_landmarks=combined_landmarks, allow_lidar = True, max_landmarks=self.__max_positioning_landmarks - 1)
+
                     logging.getLogger(__name__).info(f"=== Coords: ({x} , {y})  Heading: {heading}, Confidence: {confidence} ===")
                     if x is not None and y is not None and heading is not None and confidence is not None and confidence >= self.__min_position_confidence:
                         # display on vehicle, if configured
@@ -490,6 +496,10 @@ class PilotNavigation:
                     elif num_repositions_used < num_repositions_allowed:
                         self.reposition_cameras(num_repositions_used)
                         num_repositions_used += 1
+                    else:
+                        num_repositions_used += 1
+                        logging.getLogger(__name__).warning(f"Coordinates failed. Landmarks found, but position is bad, probably a bad landmark")
+
                 else:
                     if num_repositions_used < num_repositions_allowed:
                         self.reposition_cameras(num_repositions_used)
@@ -615,7 +625,8 @@ class PilotNavigation:
         return top_landmarks
 
 
-    def get_coords_and_heading_for_landmarks (self, combined_landmarks, allow_lidar = True, lidar_map = None):
+    def get_coords_and_heading_for_landmarks (self, combined_landmarks, allow_lidar = True, lidar_map = None, max_landmarks = None):
+        landmarks_to_keep = max_landmarks if max_landmarks is not None else self.__max_positioning_landmarks
         if allow_lidar and lidar_map is None:
             lidar_map = self.__get_lidar_map()
         else:
@@ -623,7 +634,7 @@ class PilotNavigation:
             lidar_map = None
 
         #logging.getLogger(__name__).info(f"*** Unfiltered Landmarks: {combined_landmarks}")
-        filtered_landmarks = self.__select_top_landmarks (combined_landmarks, max_landmarks = 4)
+        filtered_landmarks = self.__select_top_landmarks (combined_landmarks, max_landmarks = landmarks_to_keep)
         #logging.getLogger(__name__).info(f"*** Filtered Landmarks: {filtered_landmarks}")
 
         x, y, heading, confidence, basis = self.__position_est[[*self.__position_est.keys()][0]].get_coords_and_heading(

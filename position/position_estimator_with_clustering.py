@@ -140,7 +140,7 @@ class PositionEstimatorWithClustering (PositionEstimator):
                 largest_amount = len(groups[g])
                 largest_cluster = g
 
-        logging.getLogger(__name__).info(f"Clustering {len(headings)} headings took {time.time() - start_time} sec")
+        logging.getLogger(__name__).debug(f"Clustering {len(headings)} headings took {time.time() - start_time} sec")
 
         return groups[largest_cluster]
                 
@@ -195,7 +195,7 @@ class PositionEstimatorWithClustering (PositionEstimator):
             
             return groups[largest_cluster]
 
-        logging.getLogger(__name__).info(f"Clustering coords took {time.time() - start_time} sec")
+        logging.getLogger(__name__).debug(f"Clustering coords took {time.time() - start_time} sec")
 
         return all_coords
 

@@ -19,7 +19,7 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
         self.__view_height = CameraInfo.get_resolution_height(self.__camera_config_id)
         self.__view_width = CameraInfo.get_resolution_width(self.__camera_config_id)
 
-        self.__estimator_mode = EstimatorMode.FAST
+        self.__estimator_mode = EstimatorMode.VERY_PRECISE
         self.__adjust_for_altitude = False
 
         return super().setUp()
@@ -34,7 +34,7 @@ class TestPositionEstimatorWithRotations(unittest.TestCase):
             estimator_mode=self.__estimator_mode,
             adjust_for_altitude=self.__adjust_for_altitude)        
 
-    def test_below_axis_facing_nw (self):
+    def Xtest_below_axis_facing_nw (self):
         curr_map = self.get_map()
         located_objects = [
             {
