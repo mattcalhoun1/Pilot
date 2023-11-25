@@ -32,6 +32,7 @@ if __name__ == '__main__':
 
             if True:
                 if p.has_assignments():
+                    logging.getLogger(__name__).info("This vehicle has assignments")
                     p.complete_assignments()
                 #elif time.time() - last_position_log > position_frequency:
                 #    p.log_position(pilot_nav = p.get_navigator(default_map))
