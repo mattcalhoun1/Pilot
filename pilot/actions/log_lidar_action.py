@@ -5,11 +5,7 @@ from pilot.actions.action_base import ActionBase
 
 class LogLidarAction(ActionBase):
     def __init__(self, vehicle, pilot_nav : PilotNavigation, pilot_logger : PilotLogger, pilot_config, pilot) :
-        self.__vehicle = vehicle
-        self.__pilot = pilot
-        self.__pilot_nav = pilot_nav
-        self.__pilot_logger = pilot_logger
-        self.__pilot_config = pilot_config
+        super().__init__(vehicle=vehicle, pilot_nav=pilot_nav, pilot_logger=pilot_logger, pilot_config=pilot_config, pilot=pilot)
 
     def get_name (self):
         return "LogLidar"
@@ -19,13 +15,13 @@ class LogLidarAction(ActionBase):
 
     def log_lidar (self):
         # get live lidar from the vehicvle
-        if self.__vehicle.wait_for_ready() and self.__vehicle.get_all_configurations():
+        if self.get_vehicle().wait_for_ready() and self.get_vehicle().get_all_configurations():
             # invalidate any cache
-            self.__pilot_nav.invalidate_position()
+            self.get_pilot_nav().invalidate_position()
             
-            lidar_map = self.__vehicle.get_live_lidar_map(timeout=10.0)
+            lidar_map = self.get_vehicle().get_live_lidar_map(timeout=10.0)
             if lidar_map is not None:
-                return self.__pilot_logger.log_lidar(lidar_map)
+                return self.get_pilot_logger().log_lidar(lidar_map)
             else:
                 logging.getLogger(__name__).error("Lidar map not retrieved from vehicle")
         return False

@@ -41,7 +41,7 @@ class PathFinder:
             # if we don't have a field map, or the field map indicates the path is open
             if self.__is_path_map_plausible (start_x = start_x, start_y = start_y, end_x = end_x, end_y = end_y):
                 return [
-                    [(direct_heading, direct_dist),]
+                    [(direct_heading, direct_dist, end_x, end_y),]
                 ]
         
 
@@ -91,7 +91,7 @@ class PathFinder:
 
                                     last_leg_heading, last_leg_dist = self.find_direct_path(first_leg_x, first_leg_y, end_x, end_y)
                                     paths.append([
-                                        (potential_heading, trial_dist),(last_leg_heading, last_leg_dist)
+                                        (potential_heading, trial_dist, first_leg_x, first_leg_y),(last_leg_heading, last_leg_dist, end_x, end_y)
                                     ])
                                     distances.append(trial_dist + last_leg_dist)
 

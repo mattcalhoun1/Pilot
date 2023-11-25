@@ -5,11 +5,7 @@ from pilot.actions.action_base import ActionBase
 
 class DoNothingAction(ActionBase):
     def __init__(self, vehicle, pilot_nav : PilotNavigation, pilot_logger : PilotLogger, pilot_config, pilot) :
-        self.__vehicle = vehicle
-        self.__pilot = pilot
-        self.__pilot_nav = pilot_nav
-        self.__pilot_logger = pilot_logger
-        self.__pilot_config = pilot_config
+        super().__init__(vehicle=vehicle, pilot_nav=pilot_nav, pilot_logger=pilot_logger, pilot_config=pilot_config, pilot=pilot)
 
     def get_name (self):
         return "Ready"

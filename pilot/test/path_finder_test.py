@@ -109,9 +109,11 @@ class TestPathFinder(unittest.TestCase):
         self.assertEqual(len(paths),1)
     
         self.assertEqual(len(paths[0]), 1)
-        (heading,dist) = paths[0][0]
+        (heading,dist,x,y) = paths[0][0]
         self.assertEqual(round(heading),45)
         self.assertEqual(round(dist), 71)
+        self.assertEqual(x,50.0)
+        self.assertEqual(y,50.0)
 
         paths = path_finder.find_potential_paths (
             start_x=50.0, start_y=50.0,
@@ -121,9 +123,11 @@ class TestPathFinder(unittest.TestCase):
         self.assertEqual(len(paths),1)
     
         self.assertEqual(len(paths[0]), 1)
-        (heading,dist) = paths[0][0]
+        (heading,dist,x,y) = paths[0][0]
         self.assertEqual(round(heading),-135)
         self.assertEqual(round(dist), 141)
+        self.assertEqual(x,-50.0)
+        self.assertEqual(y,-50.0)
 
     # find potential paths with lidar taken into account
     def test_find_paths_lidar_block (self):
