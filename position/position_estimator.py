@@ -691,11 +691,19 @@ class PositionEstimator:
                 view_angles=view_angles)
 
             in_bounds_coords = []
-            if filter_out_of_bounds:        
+            if filter_out_of_bounds:
+                near_bounds_coords = []
                 # filter any that are out of bounds. Allow near_bounds to be used, as the robot could wander a little out
                 for poss_x, poss_y in curr_possibilities:
                     if self.__field_map.is_near_bounds(x=poss_x, y=poss_y):
+                        near_bounds_coords.append((poss_x, poss_y))
+
+                # filter any that are within an obstacle
+                for poss_x, poss_y in near_bounds_coords:
+                    blocked, osbtacle_id = self.__field_map.is_blocked(poss_x, poss_y)
+                    if not blocked:
                         in_bounds_coords.append((poss_x, poss_y))
+
             else:
                 in_bounds_coords = curr_possibilities
 
