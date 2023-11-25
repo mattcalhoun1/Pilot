@@ -39,13 +39,13 @@ class FaceHeadingAction(ActionBase):
                     arrived = True
                 else:
                     logging.getLogger(__name__).info(f"Rotation of {target_rotation} is required.")
-                    if self.__vehicle.rotate(target_rotation, wait_for_result=True):
+                    if self.get_vehicle().rotate(target_rotation, wait_for_result=True):
                         logging.getLogger(__name__).info("Rotation complete. Checking updated heading")
                         rotation_attempts += 1
                     else:
                         logging.getLogger(__name__).error("rotation failed, getting updated heading")
                         rotation_attempts += 1
                 
-        self.__pilot_nav.invalidate_position()
+        self.get_pilot_nav().invalidate_position()
 
         return arrived
