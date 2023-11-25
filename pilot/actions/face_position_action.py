@@ -19,8 +19,8 @@ class FacePositionAction(ActionBase):
         arrived = False
         path_finder = self.get_path_finder()
         
-        if self.__vehicle.wait_for_ready ():
-            last_x, last_y, last_heading, _,_ = self.__pilot_nav.get_last_coords_and_heading()
+        if self.get_vehicle().wait_for_ready ():
+            last_x, last_y, last_heading, _,_ = self.get_pilot_nav().get_last_coords_and_heading()
 
             target_heading, target_dist, x, y = path_finder.find_direct_path(last_x, last_y, target_x, target_y)
 
@@ -35,6 +35,6 @@ class FacePositionAction(ActionBase):
         else:
             logging.getLogger(__name__).info("Vehicle not ready!")
 
-        self.__pilot_nav.invalidate_position()
+        self.get_pilot_nav().invalidate_position()
 
         return arrived
