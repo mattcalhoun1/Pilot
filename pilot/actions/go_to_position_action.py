@@ -19,6 +19,9 @@ class GoToPositionAction(ActionBase):
         # max number of times to attempt rotate or go forward per leg
         self.__max_leg_attempts = self.get_pilot_config()['Driving']['MaxLegAttempts']
 
+        # if we get stuck finding position, this allows small movements to get better positioning
+        self.__max_positioning_adjustments = self.get_pilot_config()['Driving']['MaxPositioningAdjustments']
+
     def get_name (self):
         return "Go (x,y)"
 
@@ -92,7 +95,7 @@ class GoToPositionAction(ActionBase):
                                 logging.getLogger(__name__).info("Face heading failed. Recalculating path.")
 
                             # either way, we need updated coordinates/heading to figure out what's next
-                            self.get_pilot_nav().get_coords_and_heading()
+                            self.find_new_position()
 
                     else:
                         self.get_vehicle().display_status("No Path", True)

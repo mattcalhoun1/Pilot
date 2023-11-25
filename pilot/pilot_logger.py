@@ -87,7 +87,7 @@ class PilotLogger:
     def log_position_failure (self, map_id, basis):
         if self.__log_position_failures and basis is not None:
             # write json to file
-            with open(f"{self.__log_dir}/positionfail.{datetime.now().strftime('%Y%m%d_%H%M%S')}.json") as out:
+            with open(f"{self.__log_dir}/positionfail.{datetime.now().strftime('%Y%m%d_%H%M%S')}.json", 'w') as out:
                 out.write(json.dumps(basis, cls=NavJsonEncoder))
 
     def __get_nav_service (self):

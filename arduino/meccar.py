@@ -194,12 +194,16 @@ class MecCar(Arduino):
         self.send_message(f"Reverse:{distance_units}|{speed}|false")
         return wait_for_result == False or self.wait_for_result(10)
 
-    def strafe_left (self, wait_for_result = False):
-        self.send_message("Strafe:LL|2000")
+    def strafe (self, strafe_direction, millis, wait_for_result = False):
+        self.send_message(f"Strafe:{strafe_direction}|{millis}")
         return wait_for_result == False or self.wait_for_result(10)
 
-    def strafe_right (self, wait_for_result = False):
-        self.send_message("Strafe:RR|2000")
+    def strafe_left (self, wait_for_result = False, millis=2000):
+        self.send_message(f"Strafe:LL|{millis}")
+        return wait_for_result == False or self.wait_for_result(10)
+
+    def strafe_right (self, wait_for_result = False, millis=2000):
+        self.send_message(f"Strafe:RR|{millis}")
         return wait_for_result == False or self.wait_for_result(10)
 
     def find_measurement (self, degrees: float, angle_tolerance: float, expected_distance : float, distance_tolerance : float, max_age : int, timeout = 10):

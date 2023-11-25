@@ -9,6 +9,7 @@ class TaskType:
     Shutdown = 'SHUTDOWN'
     Sleep = 'SLEEP'
     FaceHeading = 'FACEHEADING'
+    AdjustRandomly = 'ADJUST'
 
 class Task:
     def __init__(self, task_type, task_details = {}):

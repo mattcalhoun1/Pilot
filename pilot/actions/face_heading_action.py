@@ -28,7 +28,8 @@ class FaceHeadingAction(ActionBase):
             while arrived == False and rotation_attempts < self.__max_attempts:
                 if rotation_attempts != 0:
                     # update the heading, since we've moved since last check
-                    self.get_pilot_nav().get_coords_and_heading()
+                    self.find_new_position()
+
                 current_x, current_y, current_heading, _,_ = self.get_pilot_nav().get_last_coords_and_heading()
 
                 # turn the tank to to the correct heading, repeat until we are facing close to hte correct 

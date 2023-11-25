@@ -425,7 +425,10 @@ class PilotNavigation:
             self.__lidar_time = time.time()
         return self.__lidar_map
 
-    def get_coords_and_heading (self, allow_camera_reposition = True, cam_start_default_position = True):
+    def get_coords_and_heading (self, allow_camera_reposition = True, cam_start_default_position = True, preferred_confidence = None):
+        if preferred_confidence is None:
+            preferred_confidence = self.__preferred_position_confidence
+
         if cam_start_default_position:
             # ensure cameras are at correct heading
             self.reposition_cameras()
@@ -440,7 +443,7 @@ class PilotNavigation:
         basis = None
         
         # keep looping until we get coordinates with target confidence or we hit max number of retries (in which case, we go with minimum confidence)
-        while confidence < self.__preferred_position_confidence and attempts < self.__max_position_attempts:
+        while confidence < preferred_confidence and attempts < self.__max_position_attempts:
             if attempts > 0:
                 time.sleep(self.__delay_between_location_attempts)
 
@@ -452,7 +455,7 @@ class PilotNavigation:
             landmark_preferences_met = False # do we have a great set of sightings to position
             landmark_requirements_met = False # do we have a good enough set of sightings to position
 
-            while confidence < self.__preferred_position_confidence and num_repositions_used <= num_repositions_allowed and landmark_preferences_met == False:
+            while confidence < preferred_confidence and num_repositions_used <= num_repositions_allowed and landmark_preferences_met == False:
                 landmarks = self.locate_landmarks()
                 
                 for c in landmarks:
@@ -484,7 +487,7 @@ class PilotNavigation:
                 elif landmark_requirements_met:
                     logging.getLogger(__name__).info(f"Combined Landmarks: {combined_landmarks}")
                     x, y, heading, confidence, basis = self.get_coords_and_heading_for_landmarks (combined_landmarks=combined_landmarks, allow_lidar = True)
-                    if x is None and len(combined_landmarks) > self.self.__config['Landmarks']['Minimum']:
+                    if x is None and len(combined_landmarks) > self.__config['Landmarks']['Minimum']:
                         # One of the landmarks may be bad. Try trimming the lowest hanging one
                         logging.getLogger(__name__).info(f"Positioning failed, looks like possibly an invalid landmark value. Trimming the lowest one and trying again.")
                         x, y, heading, confidence, basis = self.get_coords_and_heading_for_landmarks (combined_landmarks=combined_landmarks, allow_lidar = True, max_landmarks=self.__max_positioning_landmarks - 1)
