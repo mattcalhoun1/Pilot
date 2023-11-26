@@ -30,7 +30,7 @@ class Pilot:
 
     def __requires_location (self, assignment):
         for s in assignment['assignment']['steps']:
-            if s['command'] in [TaskType.Go, TaskType.Face, TaskType.Search]:
+            if s['command'] in [TaskType.Go, TaskType.Face]:
                 return True
         return False
 

@@ -27,12 +27,17 @@ class SearchAction(ActionBase):
         # should include either single object or multiple objects to search for
         if 'object' in params:
             return self.search([params['object'],]
-                               )
-        return self.search(params['objects'])
+        
+        refresh_position = False if 'position' not in params else params['position']
 
-    def search (self, objects):
+        return self.search(params['objects'], refresh_position)
+
+    def search (self, objects, refresh_position = False):
         if self.get_vehicle().wait_for_ready() and self.get_vehicle().get_all_configurations():
             logging.getLogger(__name__).info(f"Searching for {objects}")
+
+            if refresh_position:
+                self.find_new_position()
 
             located_objects = self.get_pilot_nav().locate_objects_multi_angles(objects=objects)
             if len(located_objects) > 0:
