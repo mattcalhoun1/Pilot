@@ -18,9 +18,10 @@ class FaceHeadingAction(ActionBase):
         return "Face °"
 
     def execute (self, params):
-        return self.face_heading(float(params['heading']))
+        recheck = True if 'recheck' not in params else params['recheck']
+        return self.face_heading(float(params['heading']), recheck)
 
-    def face_heading (self, target_heading : float):
+    def face_heading (self, target_heading : float, recheck : bool):
         arrived = False
         path_finder = self.get_path_finder()
         if self.get_vehicle().wait_for_ready ():
@@ -41,8 +42,13 @@ class FaceHeadingAction(ActionBase):
                 else:
                     logging.getLogger(__name__).info(f"Rotation of {target_rotation} is required.")
                     if self.get_vehicle().rotate(target_rotation, wait_for_result=True):
-                        logging.getLogger(__name__).info("Rotation complete. Checking updated heading")
-                        rotation_attempts += 1
+                        # if not rechecking, assume we've arrived
+                        if not recheck:
+                            arrived = True
+                            logging.getLogger(__name__).info("Rotation succeeded. Assuming heading is now correct, returning success")
+                        else:
+                            logging.getLogger(__name__).info("Rotation complete. Checking updated heading")
+                            rotation_attempts += 1
                     else:
                         logging.getLogger(__name__).error("rotation failed, getting updated heading")
                         rotation_attempts += 1

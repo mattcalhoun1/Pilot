@@ -19,8 +19,8 @@ class GoToPositionAction(ActionBase):
         # max number of times to attempt rotate or go forward per leg
         self.__max_leg_attempts = self.get_pilot_config()['Driving']['MaxLegAttempts']
 
-        # if we get stuck finding position, this allows small movements to get better positioning
-        self.__max_positioning_adjustments = self.get_pilot_config()['Driving']['MaxPositioningAdjustments']
+        # whether to stay in the rotation loop until exact heading is achieved, prior to moving forward
+        self.__recheck_after_rotation = self.get_pilot_config()['Driving']['RecheckAfterRotation']
 
     def get_name (self):
         return "Go (x,y)"
@@ -76,7 +76,7 @@ class GoToPositionAction(ActionBase):
                             last_x, last_y, last_heading, _,_ = self.get_pilot_nav().get_last_coords_and_heading()
 
                             # face the given heading
-                            face_heading_params = {"heading":leg_heading}
+                            face_heading_params = {"heading":leg_heading, "recheck":self.__recheck_after_rotation}
                             face_heading_action = self.get_pilot().get_action_factory().get_secondary_action(command=TaskType.FaceHeading, params=face_heading_params, base_action=self)
                             if face_heading_action.execute(params=face_heading_params):
                                 logging.getLogger(__name__).info(f"Face heading {leg_heading} was successful. driving a safe distance of {safe_dist}")
