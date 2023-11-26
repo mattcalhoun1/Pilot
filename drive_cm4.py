@@ -24,22 +24,11 @@ if __name__ == '__main__':
     while p.is_alive():
         # check connection
         if p.connect_to_vehicle():
-            #p.search(objects=['gazing_ball',], pilot_nav = p.get_navigator(default_map))
-            #car.look_multi([(33.0, 90),], wait_for_result=True)
-            
-            #logging.getLogger(__name__).info("Connected to vehicle")
-            #p.enter_controlled_mode(pilot_nav=p.get_navigator('basement'))
-
-            if True:
-                if p.has_assignments():
-                    logging.getLogger(__name__).info("This vehicle has assignments")
-                    p.complete_assignments()
-                #elif time.time() - last_position_log > position_frequency:
-                #    p.log_position(pilot_nav = p.get_navigator(default_map))
-                #    last_position_log = time.time()
-                #else:
-                #    p.search(objects=['gazing_ball'], pilot_nav = p.get_navigator(default_map))
-                #    time.sleep(1)
+            if p.has_assignments():
+                logging.getLogger(__name__).info("This vehicle has assignments")
+                p.complete_assignments()
+            else:
+                time.sleep(5)
         else:
             logging.getLogger(__name__).warning("Not connected to vehicle")
             time.sleep(2)
