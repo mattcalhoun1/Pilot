@@ -16,7 +16,7 @@ class AdjustRandomlyAction(ActionBase):
 
     def execute (self, params):
         strafe_dir = self.__get_random_direction()
-        strafe_millis = 1000
+        strafe_millis = 500
         rotate_deg = self.__get_random_rotation()
 
         # attempt to execute both moves on the car. If it fails, it's not a big deal
@@ -34,7 +34,7 @@ class AdjustRandomlyAction(ActionBase):
 
     def __get_random_rotation (self):
         return np.random.choice([
-            -30.0,
+            #-30.0,
             -20.0,
             -15.0,
             -10.0,
@@ -45,17 +45,17 @@ class AdjustRandomlyAction(ActionBase):
             10.0,
             15.0,
             20.0,
-            30.0
+            #30.0
         ])
 
     def __get_random_direction (self):
         return np.random.choice([
-            ArduinoConstants.STRAFE_LEFT_FORWARD,
+            #ArduinoConstants.STRAFE_LEFT_FORWARD,
             ArduinoConstants.STRAFE_LEFT_LEFT,
-            ArduinoConstants.STRAFE_LEFT_BACKWARD,
-            ArduinoConstants.STRAFE_RIGHT_FORWARD,
+            #ArduinoConstants.STRAFE_LEFT_BACKWARD,
+            #ArduinoConstants.STRAFE_RIGHT_FORWARD,
             ArduinoConstants.STRAFE_RIGHT_RIGHT,
-            ArduinoConstants.STRAFE_RIGHT_BACKWARD
+            #ArduinoConstants.STRAFE_RIGHT_BACKWARD
         ])
 
     def strafe_left (self):
