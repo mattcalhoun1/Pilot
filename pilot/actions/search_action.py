@@ -36,7 +36,8 @@ class SearchAction(ActionBase):
         if self.get_vehicle().wait_for_ready() and self.get_vehicle().get_all_configurations():
             logging.getLogger(__name__).info(f"Searching for {objects}")
 
-            if refresh_position:
+            x, y, heading, confidence, coord_age = self.get_pilot_nav().get_last_coords_and_heading()
+            if refresh_position or heading is None:
                 self.find_new_position()
 
             located_objects = self.get_pilot_nav().locate_objects_multi_angles(objects=objects)
