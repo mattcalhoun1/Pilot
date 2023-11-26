@@ -25,10 +25,10 @@ class SearchAction(ActionBase):
 
     def execute (self, params):
         # should include either single object or multiple objects to search for
-        if 'object' in params:
-            return self.search([params['object'],]
-        
         refresh_position = False if 'position' not in params else params['position']
+
+        if 'object' in params:
+            return self.search([params['object'],],refresh_position)
 
         return self.search(params['objects'], refresh_position)
 
