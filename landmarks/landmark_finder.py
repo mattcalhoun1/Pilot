@@ -16,6 +16,8 @@ class LandmarkFinder:
         self.__max_sighting_age = 10.0 # 10 seconds
         self.__default_object_id_filter = default_object_id_filter
 
+    def get_camera_config (self):
+        return self.__camera_config
 
     def locate_landmarks (self, object_locations, id_filter = None, confidence_threshold = None):
         raw_locations = self.extract_landmarks_from_locations (

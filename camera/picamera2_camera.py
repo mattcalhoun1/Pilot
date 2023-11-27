@@ -17,13 +17,13 @@ import numpy as np
 # every time the focus distance changes by a certain threshold
 # auto-optimizing is slow when first done for any given distance, but faster afterward
 class Picamera2Camera (Camera):
-    def __init__(self, high_res = False, flipped = True, default_focus_distance = 5, auto_optimize = True, auto_optimize_object_locator = None, picam = None, sensor_id = 0):
+    def __init__(self, high_res = False, flipped = True, default_focus_distance = 5, auto_optimize = True, auto_optimize_object_locator = None, picam = None, sensor_id = 0, image_resolution = None):
 
         attached_cameras = Picamera2.global_camera_info()
         logging.getLogger(__name__).info(f"Attached Cameras: {attached_cameras}")
 
-        self.__normal_size = (1536,864)#(640, 640)
-        self.__lowres_size = (1536,864) if high_res == True else (640,640)
+        self.__normal_size = (round(image_resolution.get_width()), round(image_resolution.get_height()))
+        self.__lowres_size = (round(image_resolution.get_width()), round(image_resolution.get_height())) if high_res == True else (640,640)
 
         if picam is not None:
             self.__picam2 = picam

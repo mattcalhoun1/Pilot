@@ -14,6 +14,8 @@ class EmitterLandmarkFinder (LandmarkFinder) :
         self.__emitter_model = 'lights'
         self.__landmark_type = 'light'
         self.__default_confidence_threshold = 0.25
+        self.__detection_settings = camera_config['DETECTION']
+        self.__barrel_distortion_at_edge = camera_config['BARREL_DISTORTION_AT_EDGE']
 
 
     def extract_landmarks_from_locations (self, object_locations, id_filter = ['light'], confidence_threshold = None):
@@ -70,7 +72,7 @@ class EmitterLandmarkFinder (LandmarkFinder) :
             group_id = self.get_emitter_group_identity(g)
             if group_id is not None:
                 confidence_threshold = confidence_threshold if confidence_threshold is not None else self.get_field_map().get_landmark_confidence_threshold(group_id)
-                if obj['confidence'] >= confidence_threshold:
+                if g.get_confidence() >= confidence_threshold:
                     landmark_locations.append({
                         group_id : {
                         'id':group_id,
@@ -88,6 +90,7 @@ class EmitterLandmarkFinder (LandmarkFinder) :
     # for all identified objects, extracts emitter groups
     def __extract_landmarks (self, emitter_locations, min_vert_lights = 3):
         groups = self.__extract_vertical_lines (emitter_locations)
+
         known_groups = []
         
         squares, matched_emitter_keys = self.__extract_squares_search(groups)
@@ -124,7 +127,6 @@ class EmitterLandmarkFinder (LandmarkFinder) :
                 for e in g.get_emitters():
                     all_conf.append(e.confidence)
                 g.set_confidence(statistics.mean(all_conf))
-
                 logging.getLogger(__name__).debug(f'Found {group_id} - size: {len(g.get_emitters())} centered at: {g.get_group_center()}, height: {g.get_height()}')
                 
         return known_groups
@@ -132,7 +134,7 @@ class EmitterLandmarkFinder (LandmarkFinder) :
     def __extract_vertical_lines (self, emitter_locations):
         # percent of the side to side movement a point is allowed, to be
         # considered part ofthe same emitter
-        horizontal_leeway = .05 * self.get_image_resolution().get_width()
+        horizontal_leeway = self.__detection_settings['VERTICAL_LINES']['HORIZONTAL_LEEWAY'] * self.get_image_resolution().get_width()
         groups = []
 
         for loc in emitter_locations:
@@ -148,7 +150,7 @@ class EmitterLandmarkFinder (LandmarkFinder) :
                     break
             
             if matching_group is None:
-                matching_group = EmitterGroup()
+                matching_group = EmitterGroup(barrel_distortion_at_edge=self.__barrel_distortion_at_edge, image_width=self.get_image_resolution().get_width())
                 groups.append(matching_group)
             
             matching_group.add_emitter(loc)     
@@ -165,14 +167,40 @@ class EmitterLandmarkFinder (LandmarkFinder) :
             # add each neighboring pair within the set as a potential pair
             for i, emitter in enumerate(vertical_set.get_emitters()):
                 if i < len(vertical_set.get_emitters()) - 1:
-                    trial_group = EmitterGroup()
+                    trial_group = EmitterGroup(barrel_distortion_at_edge=self.__barrel_distortion_at_edge, image_width=self.get_image_resolution().get_width())
                     trial_group.add_emitter(emitter)
                     trial_group.add_emitter(vertical_set.get_emitters()[i+1])
                     pairs.append(trial_group)
         
         return pairs
 
-    def __extract_squares_search (self, vertical_sets, vertical_leeway = 0.08, max_height_diff_pct = 0.1, max_horz_dist_pct = 0.2):
+    def __is_square_shaped (self, group_1, group_2):
+        max_width_height_ratio = self.__detection_settings['SQUARES']['MAX_WIDTH_HEIGHT_RATIO']
+
+        height = group_1.get_height()
+        set1_center_x, set1_center_y = group_1.get_group_center()
+        set2_center_x, set2_center_y = group_2.get_group_center()
+
+        width = abs(set1_center_x - set2_center_x)
+
+        return (width/height) <= max_width_height_ratio
+
+    def __is_triangle_shaped (self, group, emitter):
+        max_width_height_ratio = self.__detection_settings['TRIANGLES']['MAX_WIDTH_HEIGHT_RATIO']
+
+        height = group.get_height()
+        group_center_x, group_center_y = group.get_group_center()
+        emitter_center_x, emitter_center_y = emitter.get_center()
+
+        width = abs(emitter_center_x - group_center_x)
+
+        return (width/height) <= max_width_height_ratio
+
+    def __extract_squares_search (self, vertical_sets):
+        vertical_leeway = self.__detection_settings['SQUARES']['VERTICAL_LINE_CENTER_LEEWAY']
+        max_height_diff_pct = self.__detection_settings['SQUARES']['MAX_LINE_HEIGHT_DIFF']
+        max_horz_dist_pct = self.__detection_settings['SQUARES']['MAX_HORIZONTAL_DIST']
+ 
         squares = []
         matched_groups = []
         matched_emitter_keys = []
@@ -186,21 +214,25 @@ class EmitterLandmarkFinder (LandmarkFinder) :
                     if this_key not in matched_groups:
                         s2_pairs = self.__get_potential_pairs(s2, matched_groups + [this_key,]) # filter already matched groups, plus the first comparison set
                         for s2_pair in s2_pairs:
-                            #logging.getLogger(__name__).info(f"Checking for squarage between {s2_pair.get_group_center()} and {s1_pair.get_group_center()}")
                             if self.__are_vertically_aligned (s1_pair, s2_pair, vertical_leeway, max_height_diff_pct, max_horz_dist_pct):
-                                matched_groups.append(this_key)
-                                matched_groups.append(self.__get_group_key(s2))
-                                
-                                # Add the p2 line to p1, and change its type to square
-                                s1_pair.set_pattern(EmitterGroupPattern.SQUARE)
-                                for e in s2_pair.get_emitters():
-                                    s1_pair.add_emitter(e)
-                                self.__set_emitters_as_matched(s1_pair, matched_emitter_keys)
-                                squares.append(s1_pair)
-                                break
+                                if self.__is_square_shaped(s1_pair, s2_pair):
+                                    matched_groups.append(this_key)
+                                    matched_groups.append(self.__get_group_key(s2))
+                                    
+                                    # Add the p2 line to p1, and change its type to square
+                                    s1_pair.set_pattern(EmitterGroupPattern.SQUARE)
+                                    for e in s2_pair.get_emitters():
+                                        s1_pair.add_emitter(e)
+                                    self.__set_emitters_as_matched(s1_pair, matched_emitter_keys)
+                                    squares.append(s1_pair)
+                                    break
         return squares, matched_emitter_keys
 
-    def __extract_triangles_search (self, vertical_sets, all_emitters, vertical_leeway = 0.05, max_horz_dist_pct = 0.2, min_width_pct = 0.04):
+    def __extract_triangles_search (self, vertical_sets, all_emitters):
+        vertical_leeway = self.__detection_settings['TRIANGLES']['VERTICAL_LEEWAY']
+        max_horz_dist_pct = self.__detection_settings['TRIANGLES']['MAX_HORIZONTAL_DIST']
+        min_width_pct = self.__detection_settings['TRIANGLES']['MIN_WIDTH']
+
         triangles = []
         matched_groups = []
         matched_emitter_keys = []
@@ -220,14 +252,15 @@ class EmitterLandmarkFinder (LandmarkFinder) :
                             if self.__are_group_and_emitter_vertically_aligned (s1_pair, e, vertical_leeway, max_horz_dist_pct):
                                 if self.__is_triangle_wide_enough (s1_pair, e, min_width_pct):
                                     if self.__is_triangle_tip_centered (s1_pair, e):
-                                        matched_groups.append(this_key)
-                                            
-                                        # Add the loner point to the group, and change its type to triangle
-                                        s1_pair.set_pattern(self.__get_triangle_type (s1_pair, e))
-                                        s1_pair.add_emitter(e)
-                                        self.__set_emitters_as_matched(s1_pair, matched_emitter_keys)
-                                        triangles.append(s1_pair)
-                                        break
+                                        if self.__is_triangle_shaped (s1_pair, e):
+                                            matched_groups.append(this_key)
+                                                
+                                            # Add the loner point to the group, and change its type to triangle
+                                            s1_pair.set_pattern(self.__get_triangle_type (s1_pair, e))
+                                            s1_pair.add_emitter(e)
+                                            self.__set_emitters_as_matched(s1_pair, matched_emitter_keys)
+                                            triangles.append(s1_pair)
+                                            break
         return triangles, matched_emitter_keys
 
 

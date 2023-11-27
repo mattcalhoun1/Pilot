@@ -10,12 +10,14 @@ class EmitterGroupPattern:
     SIDEWAYS_TRIANGLE_RIGHT = 3
 
 class EmitterGroup:
-    def __init__(self):
+    def __init__(self, barrel_distortion_at_edge = 0.0, image_width = 0.0):
         self.__emitters = []
         self.__identity = None
         self.__time = time.time()
         self.__confidence = 0
         self.__pattern = EmitterGroupPattern.VERTICAL_LINE # default
+        self.__barrel_distortion_at_edge = barrel_distortion_at_edge
+        self.__image_width = image_width
         
     def set_pattern(self, pattern):
         self.__pattern = pattern
@@ -82,10 +84,16 @@ class EmitterGroup:
         return self.__emitters
     
     def get_height (self):
+        distorted_height = None
+        corrected_height = None
+        estimated_center_x = None # for calculating distortion
+
         if self.__pattern in [EmitterGroupPattern.VERTICAL_LINE, EmitterGroupPattern.SIDEWAYS_TRIANGLE_LEFT, EmitterGroupPattern.SIDEWAYS_TRIANGLE_RIGHT]:
             top_center_x, top_center_y = self.__emitters[0].get_center()
             bottom_center_x, bottom_center_y = self.__emitters[-1].get_center()
-            return abs(bottom_center_y - top_center_y)
+            distorted_height = abs(bottom_center_y - top_center_y)
+            estimated_center_x = statistics.mean([top_center_x, bottom_center_x])
+
         elif self.__pattern == EmitterGroupPattern.SQUARE:
             # height is abs value of ( avg of top two - avg bottom two )
             top_x1, top_y1 = self.__emitters[0].get_center()
@@ -95,10 +103,27 @@ class EmitterGroup:
             bottom_x1, bottom_y1 = self.__emitters[2].get_center()
             bottom_x2, bottom_y2 = self.__emitters[3].get_center()
             mid_bottom_y = statistics.mean([bottom_y1, bottom_y2])
+
+            estimated_center_x = statistics.mean([top_x1, top_x2, bottom_x1, bottom_x2])
             
-            return int(abs(mid_top_y - mid_bottom_y))
-            
-        return None
+            distorted_height = int(abs(mid_top_y - mid_bottom_y))
+
+        if distorted_height is not None:
+            # get distance from center
+            #logging.getLogger(__name__).info(f"Original height: {distorted_height}")
+            corrected_height = distorted_height - (distorted_height * self.get_height_distortion_multiplier_at_x(estimated_center_x))
+            #logging.getLogger(__name__).info(f"Corrected height: {corrected_height}")
+
+        return corrected_height
+
+    def get_height_distortion_multiplier_at_x (self, x):
+        # get the center's distance from y center of image
+        image_x_center = self.__image_width / 2
+        dist_from_image_center = abs(x - image_x_center)
+        distortion_multiplier = (dist_from_image_center / image_x_center) * self.__barrel_distortion_at_edge
+        #logging.getLogger(__name__).info(f"Applying edge size correction of {distortion_multiplier} percent")
+        return distortion_multiplier
+
 
     def get_width (self):
         # get the center of each point. furthest right minus furthest left is the width

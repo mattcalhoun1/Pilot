@@ -27,7 +27,8 @@ class CameraManager:
                 default_focus_distance=cfg['DEFAULT_FOCUS'],
                 auto_optimize=cfg['AUTO_OPTIMIZE'],
                 auto_optimize_object_locator=auto_optimize_object_locator,
-                sensor_id=cfg['SENSOR_ID']
+                sensor_id=cfg['SENSOR_ID'],
+                image_resolution=CameraInfo.get_resolution(camera_config)
             )
             return self.__cameras[camera_id]
 

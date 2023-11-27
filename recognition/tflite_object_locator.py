@@ -7,6 +7,7 @@ except:
 import time
 import logging
 from recognition.object_locator import ObjectLocator
+import math
 
 class TFLiteObjectLocator (ObjectLocator):
     def __init__(self, model_configs = {}, keep_latest_image = True, preload_models = True):
@@ -53,10 +54,40 @@ class TFLiteObjectLocator (ObjectLocator):
         return self.find_objects_in_image(image = image, object_filter=object_filter, min_confidence=min_confidence)
 
 
+    def __get_vertical_slices(self, image):
+        slices = []
+        initial_h = None
+        initial_w = None
+
+        if len(image.shape) == 3:
+            initial_h, initial_w, _ = image.shape
+        else:
+            initial_h, initial_w = image.shape
+
+        #logging.getLogger(__name__).info(f"Full Height: {initial_h}, Width: {initial_w}, Dimensions: {len(image.shape)}")
+
+        v_slices = math.floor(initial_w / initial_h)
+        if v_slices > 1:
+            #logging.getLogger(__name__).info(f"Slicing image into {v_slices}")
+            slices = np.split(image, v_slices, axis=1)
+            for s in slices:
+                if len(s.shape) == 3:
+                    s_h, s_w, _ = s.shape
+                else:
+                    s_h, s_w = s.shape
+                #logging.getLogger(__name__).info(f"Slice Height: {s_h}, Width: {s_w}, Dimensions: {len(s.shape)}")
+
+        else:
+            slices.append(image)
+        return slices
+
+
     def find_objects_in_image(self, image, object_filter = None, min_confidence = 0.4):
         if self.__keep_latest_image:
             self.__latest_image = image # for retrieving later
 
+        initial_h = None
+        initial_w = None
         last_width = None
         last_height = None
         last_input_data = None
@@ -80,102 +111,121 @@ class TFLiteObjectLocator (ObjectLocator):
             if height == last_height and width == last_width and last_input_data is not None and last_floating_model == floating_model:
                 input_data = last_input_data
             else:
-                logging.getLogger(__name__).debug("Converting image, since this is first model pass")
+                #logging.getLogger(__name__).info("Converting image, since this is first model pass")
                 last_width = width
                 last_height = height
                 last_floating_model = floating_model
-                
+                prepared_slices = [] # image slices resized as necessary for model input
+
                 # picamera2 will have 2d image shape, cv2 will have 3d (channels)
-                initial_h = None
-                initial_w = None
                 picture = None
                 if len(image.shape) == 3: # cv2 camera
                     # model does better with gray scale
-                    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
                     initial_h, initial_w = image.shape
-                    picture = cv2.resize(image, (width, height), cv2.INTER_CUBIC) # INTER_CUBIC, INTER_AREA, INTER_LINEAR, INTER_NEAREST
-                    picture = cv2.cvtColor(picture, cv2.COLOR_GRAY2RGB)
-                    cv2.imwrite('/tmp/tflite_locator.png', picture)
+
+                    hires_slices = self.__get_vertical_slices(image=image)
+                    for i,img_slice in enumerate(hires_slices):
+                        picture = cv2.cvtColor(img_slice, cv2.COLOR_BGR2GRAY)
+                        picture = cv2.resize(picture, (width, height), cv2.INTER_CUBIC) # INTER_CUBIC, INTER_AREA, INTER_LINEAR, INTER_NEAREST
+                        picture = cv2.cvtColor(picture, cv2.COLOR_GRAY2RGB)
+                        cv2.imwrite(f'/tmp/tflite_locator_{i}.png', picture)
+                        prepared_slices.append(picture)
                     
                 else:
-                    rgb = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
-                    initial_h, initial_w, channels = rgb.shape
-                    picture = cv2.resize(rgb, (width, height))
+                    initial_h, initial_w = image.shape
 
-                input_data = np.expand_dims(picture, axis=0)
-                if floating_model:
-                    input_data = (np.float32(input_data) - 127.5) / 127.5
+                    hires_slices = self.__get_vertical_slices(image=image)
+                    for i,img_slice in enumerate(hires_slices):
+                        rgb = cv2.cvtColor(img_slice, cv2.COLOR_GRAY2RGB)
+                        picture = cv2.resize(rgb, (width, height))
+                        cv2.imwrite(f'/tmp/tflite_locator_{i}.png', picture)
+                        prepared_slices.append(picture)
+
+                input_data = []
+                for input_slice in prepared_slices:
+                    expanded = np.expand_dims(input_slice, axis=0)
+                    if floating_model:
+                        expanded = (np.float32(expanded) - 127.5) / 127.5
+
+                    input_data.append(expanded)
+
+
                 last_input_data = input_data
 
-            # invoke the detection model
-            interpreter.set_tensor(input_details[0]['index'], input_data)
-            interpreter.invoke()
+            for i, img_part in enumerate(input_data):
+                # how many pixels to adjust bounding box by, given we may only be looking at a slice of the image
+                slice_width = initial_w / len(input_data)
+                horz_pixel_offset = i * slice_width
 
-            # retrieve the detected bound boxes
-            detected_boxes = interpreter.get_tensor(output_details[0]['index'])
-            detected_classes = interpreter.get_tensor(output_details[1]['index'])
-            detected_scores = interpreter.get_tensor(output_details[2]['index'])
-            num_boxes = interpreter.get_tensor(output_details[3]['index'])
+                # invoke the detection model
+                interpreter.set_tensor(input_details[0]['index'], img_part)
+                interpreter.invoke()
 
-            # fix for this new model
-            if True:
-                #box_count = num_boxes[0]
-                #c_temp = detected_boxes
-                #detected_boxes = detected_scores
-                #detected_scores = c_temp
-                #detected_classes = num_boxes
-                #num_boxes = box_count
+                # retrieve the detected bound boxes
+                detected_boxes = interpreter.get_tensor(output_details[0]['index'])
+                detected_classes = interpreter.get_tensor(output_details[1]['index'])
+                detected_scores = interpreter.get_tensor(output_details[2]['index'])
+                num_boxes = interpreter.get_tensor(output_details[3]['index'])
 
-                # order in the custom model:
-                # 0 = scores, 1 = boxes, 2 = num objects detected?, 3 = classes
-                
-                detected_scores = interpreter.get_tensor(output_details[0]['index'])
-                detected_boxes = interpreter.get_tensor(output_details[1]['index'])
-                num_boxes = interpreter.get_tensor(output_details[2]['index'])
-                detected_classes = interpreter.get_tensor(output_details[3]['index'])
+                # fix for this new model
+                if True:
+                    #box_count = num_boxes[0]
+                    #c_temp = detected_boxes
+                    #detected_boxes = detected_scores
+                    #detected_scores = c_temp
+                    #detected_classes = num_boxes
+                    #num_boxes = box_count
 
-                logging.getLogger(__name__).debug("Detected Boxes:")
-                logging.getLogger(__name__).debug(f"{detected_boxes}")
-                logging.getLogger(__name__).debug("num boxes:")
-                logging.getLogger(__name__).debug(f"{num_boxes}")
-                logging.getLogger(__name__).debug("detected classes:")
-                logging.getLogger(__name__).debug(f"{detected_classes}")
-                logging.getLogger(__name__).debug("detected scores:")
-                logging.getLogger(__name__).debug(f"{detected_scores}")
-            # end fix
+                    # order in the custom model:
+                    # 0 = scores, 1 = boxes, 2 = num objects detected?, 3 = classes
+                    
+                    detected_scores = interpreter.get_tensor(output_details[0]['index'])
+                    detected_boxes = interpreter.get_tensor(output_details[1]['index'])
+                    num_boxes = interpreter.get_tensor(output_details[2]['index'])
+                    detected_classes = interpreter.get_tensor(output_details[3]['index'])
+
+                    logging.getLogger(__name__).debug("Detected Boxes:")
+                    logging.getLogger(__name__).debug(f"{detected_boxes}")
+                    logging.getLogger(__name__).debug("num boxes:")
+                    logging.getLogger(__name__).debug(f"{num_boxes}")
+                    logging.getLogger(__name__).debug("detected classes:")
+                    logging.getLogger(__name__).debug(f"{detected_classes}")
+                    logging.getLogger(__name__).debug("detected scores:")
+                    logging.getLogger(__name__).debug(f"{detected_scores}")
+                # end fix
 
 
-            for i in range(int(num_boxes[0])):
-                top, left, bottom, right = detected_boxes[0][i]
-                classId = int(detected_classes[0][i])
-                if object_filter is None or self.__labels[m][classId] in object_filter:
-                    score = detected_scores[0][i]
-                    if score > min_confidence:
-                        #logging.getLogger(__name__).info(f"{self.__labels[m][classId]} - Top: {top}, Left: {left}, Bottom: {bottom}, Right: {right}, Conf: {score}")
-                        
-                        xmin = left * initial_w
-                        ymin = top * initial_h
-                        xmax = right * initial_w
-                        ymax = bottom * initial_h
-                        box = [xmin, ymin, xmax, ymax]
-                        x_center = xmin + ((xmax-xmin)/2)
-                        y_center = ymin + ((ymax-ymin)/2)
-                        
-                        #if xmin >= 0 and ymin >= 0 and ymax <= last_height and xmax <= last_width:
-                            #rectangles.append(box)
-                            #logging.getLogger(__name__).info(f"Found {self.__labels[m][classId]} centered at ({x_center},{y_center}), confidence: {score}, [({xmin},{ymin}):({xmax},{ymax})]")
-                        detected_objects.append({
-                            'object':self.__labels[m][classId],
-                            'x_center':x_center,
-                            'y_center':y_center,
-                            'x_min':max(1,xmin),
-                            'x_max':min(initial_w, xmax),
-                            'y_min':max(1,ymin),
-                            'y_max':min(initial_h, ymax),
-                            'confidence':score
-                        })
-                        #else:
-                        #    logging.getLogger(__name__).warning("Out of bounds object on image, ignoring!")
+                for i in range(int(num_boxes[0])):
+                    top, left, bottom, right = detected_boxes[0][i]
+                    classId = int(detected_classes[0][i])
+                    if object_filter is None or self.__labels[m][classId] in object_filter:
+                        score = detected_scores[0][i]
+                        if score > min_confidence:
+                            #logging.getLogger(__name__).info(f"{self.__labels[m][classId]} - Top: {top}, Left: {left}, Bottom: {bottom}, Right: {right}, Conf: {score}")
+                            
+                            xmin = horz_pixel_offset + (left * slice_width)
+                            ymin = top * initial_h
+                            xmax = horz_pixel_offset + (right * slice_width)
+                            ymax = bottom * initial_h
+                            box = [xmin, ymin, xmax, ymax]
+                            x_center = xmin + ((xmax-xmin)/2)
+                            y_center = ymin + ((ymax-ymin)/2)
+                            
+                            #if xmin >= 0 and ymin >= 0 and ymax <= last_height and xmax <= last_width:
+                                #rectangles.append(box)
+                                #logging.getLogger(__name__).info(f"Found {self.__labels[m][classId]} centered at ({x_center},{y_center}), confidence: {score}, [({xmin},{ymin}):({xmax},{ymax})]")
+                            detected_objects.append({
+                                'object':self.__labels[m][classId],
+                                'x_center':x_center,
+                                'y_center':y_center,
+                                'x_min':max(1,xmin),
+                                'x_max':min(initial_w, xmax),
+                                'y_min':max(1,ymin),
+                                'y_max':min(initial_h, ymax),
+                                'confidence':score
+                            })
+                            #else:
+                            #    logging.getLogger(__name__).warning("Out of bounds object on image, ignoring!")
 
         return detected_objects
 
