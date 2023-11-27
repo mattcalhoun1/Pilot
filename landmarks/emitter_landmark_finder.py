@@ -81,7 +81,8 @@ class EmitterLandmarkFinder (LandmarkFinder) :
                         'x2':max_x,
                         'y2':max_y,
                         'confidence':g.get_confidence(),
-                        'time':time.time()
+                        'time':time.time(),
+                        'corrected_height':g.get_height()
                         }
                     })
         

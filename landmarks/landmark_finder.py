@@ -15,6 +15,8 @@ class LandmarkFinder:
         self.__max_cached_sightings_per_landmark = 10 
         self.__max_sighting_age = 10.0 # 10 seconds
         self.__default_object_id_filter = default_object_id_filter
+        self.__barrel_distortion_at_edge = camera_config['BARREL_DISTORTION_AT_EDGE']
+
 
     def get_camera_config (self):
         return self.__camera_config
@@ -112,6 +114,7 @@ class LandmarkFinder:
             all_y1 = {}
             all_x2 = {}
             all_y2 = {}
+            all_corrected_height = {}
             all_conf = {}
 
             try:
@@ -124,11 +127,13 @@ class LandmarkFinder:
                             all_y1[lid] = []
                             all_y2[lid] = []
                             all_conf[lid] = []
+                            all_corrected_height[lid] = []
                         all_x1[lid].append(landmark_sighting['x1'])
                         all_x2[lid].append(landmark_sighting['x2'])
                         all_y1[lid].append(landmark_sighting['y1'])
                         all_y2[lid].append(landmark_sighting['y2'])
                         all_conf[lid].append(landmark_sighting['confidence'])
+                        all_corrected_height[lid].append(landmark_sighting['corrected_height'])
 
                 for lid in all_x1:
                     avgd_grp = {
@@ -142,12 +147,14 @@ class LandmarkFinder:
                         avgd_grp['y1'] = statistics.mean(all_y1[lid])
                         avgd_grp['y2'] = statistics.mean(all_y2[lid])
                         avgd_grp['confidence'] = statistics.mean(all_conf[lid])
+                        avgd_grp['corrected_height'] = statistics.mean(all_corrected_height[lid])
                     else: # just get first one
                         avgd_grp['x1'] = all_x1[lid][0]
                         avgd_grp['x2'] = all_x2[lid][0]
                         avgd_grp['y1'] = all_y1[lid][0]
                         avgd_grp['y2'] = all_y2[lid][0]
                         avgd_grp['confidence'] = all_conf[lid][0]
+                        avgd_grp['corrected_height'] = all_corrected_height[lid][0]
 
                     smoothed_landmarks[lid] = avgd_grp
             except Exception as e:
@@ -366,7 +373,19 @@ class LandmarkFinder:
         return abs(landmark['x2'] - landmark['x1']) / 2 + landmark['x1'],abs(landmark['y2'] - landmark['y1']) / 2 + landmark['y1']
 
     def get_landmark_height (self, landmark):
+        if 'corrected_height' in landmark:
+            return landmark['corrected_height']
         return abs(landmark['y2'] - landmark['y1'])
 
     def get_landmark_width (self, landmark):
+        if 'corrected_width' in landmark:
+            return landmark['corrected_width']
         return abs(landmark['x2'] - landmark['x1'])
+
+    def get_height_distortion_multiplier_at_x (self, x):
+        # get the center's distance from y center of image
+        image_x_center = self.get_image_resolution().get_width() / 2
+        dist_from_image_center = abs(x - image_x_center)
+        distortion_multiplier = (dist_from_image_center / image_x_center) * self.__barrel_distortion_at_edge
+        #logging.getLogger(__name__).info(f"Applying edge size correction of {distortion_multiplier} percent")
+        return distortion_multiplier

@@ -231,7 +231,7 @@ class PilotNavigation:
                     c_located_objects = self.__locator.find_objects_on_camera(camera=self.__get_camera(camera_id), min_confidence = self.__min_object_confidence)
                 else:
                     c_located_objects = self.__locator.find_objects_in_image_file(image_file = latest_image_files[locate_cycle], min_confidence = self.__min_object_confidence)
-                logging.getLogger(__name__).info(f"Camera {camera_id} found {len(c_located_objects)} objects: {c_located_objects}")
+                logging.getLogger(__name__).debug(f"Camera {camera_id} found {len(c_located_objects)} objects: {c_located_objects}")
                 located_landmarks[camera_id] = {}
                 for f in self.__finders[camera_id]:
                     f_located = f.locate_landmarks(object_locations=c_located_objects)

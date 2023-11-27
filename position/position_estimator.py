@@ -54,8 +54,8 @@ class PositionEstimator:
         for located_group in located_objects:
             for landmark_id in located_group:
                 obj_pix = located_group[landmark_id]
-                height_pixels = abs(obj_pix['y2'] - obj_pix['y1'])
-                width_pixels = abs(obj_pix['x2'] - obj_pix['x1'])
+                height_pixels = obj_pix['corrected_height'] if 'corrected_height' in obj_pix else abs(obj_pix['y2'] - obj_pix['y1'])
+                width_pixels = obj_pix['corrected_width'] if 'corrected_width' in obj_pix else abs(obj_pix['x2'] - obj_pix['x1'])
                 height_degrees = self.__visual_degrees_calc.caclulate_vertical_visual_degrees_given_height_pixels(height_pixels=height_pixels)
                 width_degrees = self.__visual_degrees_calc.caclulate_horizontal_visual_degrees_given_width_pixels(width_pixels=width_pixels)
 
