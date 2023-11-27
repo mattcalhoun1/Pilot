@@ -37,6 +37,10 @@ class ObjectSearchFinder (LandmarkFinder) :
                 landmark_id = f"{obj['object']}.{i}"
 
                 if obj['confidence'] >= confidence_threshold:
+                    distorted_height = abs(y2-y1)
+                    estimated_center_x = statistics.mean([x1, x2])
+                    corrected_height = distorted_height - (distorted_height * self.get_height_distortion_multiplier_at_x(estimated_center_x))
+
                     landmark_locations.append({
                         landmark_id : {
                         'id':landmark_id,
@@ -45,7 +49,8 @@ class ObjectSearchFinder (LandmarkFinder) :
                         'x2':x2,
                         'y2':y2,
                         'confidence':obj['confidence'],
-                        'time':time.time()
+                        'time':time.time(),
+                        'corrected_height':corrected_height
                         }
                     })
 
