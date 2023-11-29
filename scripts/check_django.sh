@@ -6,6 +6,6 @@ if [ "$pidcount" -gt "0" ]; then
   echo "Django is running"
 else
   echo "Django is not running, starting it"
-  cd /home/matt/services/NavService/navsvc
+  cd /home/matt/projects/services/NavService/navsvc
   ./start_django.sh & 
 fi

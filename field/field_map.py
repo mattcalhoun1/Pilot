@@ -83,6 +83,32 @@ class FieldMap:
     def is_path_blocked (self, x1, y1, x2, y2, path_width = 0):
         if self.__obstacles is None:
             return False, None
+        
+        # if we are already sitting within the footprint of an obstacle, first move away from the obstacle before doing this calculation
+        on_obstacle, obstacle_id = self.is_blocked(x1, y1)
+        if on_obstacle:
+            #logging.getLogger(__name__).warning(f"On or against {obstacle_id}, getting away!")
+
+            # whichever point of the obstacle is closest to the center of the map, pretend we are just away from it
+            ox_min, oy_min, ox_max, oy_max = self.get_obstacle_bounds(obstacle_id=obstacle_id)
+            bx_min, by_min, bx_max, by_max = self.get_boundaries()
+            x_center = bx_min + ((bx_max - bx_min) / 2)
+            y_center = by_min + ((by_max - by_min) / 2)
+
+            new_x = x1
+            new_y = y1
+            still_stuck = True
+            move_size = 1
+            while (still_stuck):
+                still_stuck, obstacle_id = self.is_blocked(new_x, new_y)
+                new_x = ox_min - move_size if (abs(x_center - ox_min) < abs(x_center - ox_max)) else ox_max + move_size
+                new_y = oy_min - move_size if (abs(y_center - oy_min) < abs(y_center - oy_max)) else oy_max + move_size
+                move_size += 1 # next move will be bigger
+
+            #logging.getLogger(__name__).info(f"Replacing actual coords with off-obstacle: {new_x},{new_y}")
+            x1 = new_x
+            y1 = new_y
+
 
         # if width is to be taken into account, we need to do this check 4 times with a different path segment
         path_segments = [
@@ -122,7 +148,7 @@ class FieldMap:
     # returns xmin, ymin, xmax, ymax for given obstacle
     def get_obstacle_bounds (self, obstacle_id):
         if self.__obstacles is not None and obstacle_id in self.__obstacles:
-            return self.__obstacles[obstacle_id]['xmin'], self.__obstacles['ymin'], self.__obstacles[obstacle_id]['xmax'], self.__obstacles['ymax']
+            return self.__obstacles[obstacle_id]['xmin'], self.__obstacles[obstacle_id]['ymin'], self.__obstacles[obstacle_id]['xmax'], self.__obstacles[obstacle_id]['ymax']
         
         return None, None, None, None
 
