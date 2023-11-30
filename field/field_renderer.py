@@ -21,6 +21,7 @@ class FieldRenderer:
         fig = self.render_field_image(add_game_state=add_game_state, player_id=player_id, other_players_visible=other_players_visible)
 
         fig.canvas.print_png(image_file)
+        plt.close()
         #with open(image_file, 'w') as outfile:
         #    fig.canvas.print_png(outfile)
 
