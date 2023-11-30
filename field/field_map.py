@@ -58,6 +58,9 @@ class FieldMap:
             return True
 
         return x >= self.__boundaries['xmin'] and x <= self.__boundaries['xmax'] and y >= self.__boundaries['ymin'] and y <= self.__boundaries['ymax']
+    
+    def get_obstacles (self):
+        return self.__obstacles
 
     # tells whether a given point is in bounds or close to it
     def is_near_bounds (self, x, y):
