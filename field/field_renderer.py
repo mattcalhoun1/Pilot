@@ -54,10 +54,11 @@ class FieldRenderer:
 
         if add_game_state:
             self.__draw_game_state(agent_id, ax, True)
-        if other_agents_visible:
-            for p in self.__agent_state:
-                if p != agent_id:
-                    self.__draw_game_state(p, ax, False)
+            if other_agents_visible:
+                for p in self.__agent_state:
+                    if p != agent_id:
+                        self.__draw_game_state(p, ax, False)
+            self.__draw_found_targets(ax=ax)
 
         # obstacles need to cover all past state data
         self.__draw_obstacles(ax)
@@ -193,6 +194,20 @@ class FieldRenderer:
                     fill=True
                 )
                 ax.add_patch(pos_circle)
+
+    # draws targets that have been found
+    def __draw_found_targets (self, ax):
+        for tid in self.__search_state:
+            estimated_x, estimated_y, agent_id = self.__search_state[tid]
+            scaled_x, scaled_y = self.__map_scaler.get_scaled_coords(estimated_x, estimated_y)
+            pos_circle = mpatches.Rectangle(
+                [scaled_x, scaled_y], 
+                color='cyan', 
+                alpha=1.0,
+                fill=True,
+                angle=45.0
+            )
+            ax.add_patch(pos_circle)
 
     def __draw_boundaries (self, ax):
         bx_min, by_min, bx_max, by_max = self.__field_map.get_boundaries()
