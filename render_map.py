@@ -1,17 +1,18 @@
 from field.field_renderer import FieldRenderer
 from field.field_map_persistence import FieldMapPersistence
 from field.field_scaler import FieldScaler
+from position.confidence import Confidence
 import logging
 
 def get_game_state ():
     return {
         'MecCar': {
             'position' : [
-                (-50.0, 100.0, -44.0),
-                (-20.0, 40.0, -120.0),
-                (10.0, 0.0, 44.0),
-                (20.0, 20.0, 33.0),
-                (22.0, -5.0, -100.0)
+                (-50.0, 100.0, -44.0, Confidence.CONFIDENCE_HIGH),
+                (-20.0, 40.0, -120.0, Confidence.CONFIDENCE_HIGH),
+                (10.0, 0.0, 44.0, Confidence.CONFIDENCE_HIGH),
+                (20.0, 20.0, 33.0, Confidence.CONFIDENCE_HIGH),
+                (22.0, -5.0, -100.0, Confidence.CONFIDENCE_HIGH)
             ],
             'look': [
                 (-20.0, 40.0, -120.0, -160.0, 160.0, 50.0),
@@ -21,9 +22,9 @@ def get_game_state ():
         },
         'Tank': {
             'position' : [
-                (-100.0, 200.0, -170.0),
-                (-75.0, 180.0, -46.0),
-                (-10.0, 120.0, 170.0),
+                (-100.0, 200.0, -170.0, Confidence.CONFIDENCE_HIGH),
+                (-75.0, 180.0, -46.0, Confidence.CONFIDENCE_HIGH),
+                (-10.0, 120.0, 170.0, Confidence.CONFIDENCE_HIGH),
             ],
             'look': [
                 (-100.0, 200.0, -170.0, -160.0, 160.0, 50.0),
@@ -57,8 +58,8 @@ if __name__ == '__main__':
 
     gs = get_game_state()
     for v in gs:
-        renderer.add_game_state (v, gs[v]['position'], gs[v]['look'])
+        renderer.update_agent_state (v, gs[v]['position'], gs[v]['look'])
 
     # render the game state from the MecCar's perspective
-    renderer.save_field_image('/tmp/map.png', add_game_state=True, player_id='MecCar', other_players_visible=True)
+    renderer.save_field_image('/tmp/map.png', add_game_state=True, agent_id='MecCar', other_agents_visible=True)
 
