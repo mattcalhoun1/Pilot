@@ -148,14 +148,6 @@ class FieldScaler:
                 distance = traveled,
                 is_forward = target_x > starting_x)
 
-            #curr_x, curr_y = self.__get_relative_x_y(
-            #    x=starting_x,
-            #    y=starting_y,
-            #    cartesian_degrees=cartesian_degrees,
-            #    dist=traveled,
-            #    is_forward=target_x > starting_x
-            #)
-
             traveled = self.__get_distance(starting_x, starting_y, curr_x, curr_y)
 
             if self.__get_distance(starting_x, starting_y, curr_x, curr_y) <= max_dist:
@@ -166,19 +158,6 @@ class FieldScaler:
         logging.getLogger(__name__).info(f"Position {starting_x},{starting_y} wants to go up to {max_dist} toward {target_x},{target_y} returning nearest coords: {last_ok_x},{last_ok_y}")
 
         return last_ok_x, last_ok_y
-
-    def __get_relative_x_y (self, cartesian_degrees, x, y, dist, is_forward):
-        # rotate degrees so zero is east and 180 is west
-        #x = r X cos( θ )
-        #y = r X sin( θ )
-        if is_forward:
-            est_x = x + dist * math.cos(math.radians(cartesian_degrees))
-            est_y = y + dist * math.sin(math.radians(cartesian_degrees))
-        else:
-            est_x = x - dist * math.cos(math.radians(cartesian_degrees))
-            est_y = y - dist * math.sin(math.radians(cartesian_degrees))
-
-        return est_x, est_y
 
     def is_in_bounds (self, sim_x, sim_y):
         lvps_x,lvps_y = self.get_lvps_coords(sim_x, sim_y)
@@ -191,24 +170,6 @@ class FieldScaler:
         lvps_x,lvps_y = self.get_lvps_coords(sim_x, sim_y)
         is_blocked, obstacle_id = self.__field_map.is_blocked(lvps_x, lvps_y)
         return is_blocked
-
-    #def get_scaled_random_traversable_coords (self):
-    #    max_attempts = 1000
-    #    curr_attempt = 0
-    #
-    #    while curr_attempt < max_attempts:
-    #        curr_attempt += 1
-    #        x = random.randrange(self.__scaled_width)
-    #        y = random.randrange(self.__scaled_height)
-    #        lvps_x, lvps_y = self.get_lvps_coords(x,y)
-    #
-    #        if self.__field_map.is_in_bounds(lvps_x, lvps_y):
-    #            blocked, obstacle_id = self.__field_map.is_blocked(lvps_x, lvps_y)
-    #            if not blocked:
-    #                return x,y
-    #
-    #    logging.getLogger(__name__).error("Unable to find traversable coords!")
-    #    return None,None
 
     def get_random_traversable_coords (self):
         max_attempts = 1000
