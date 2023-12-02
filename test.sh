@@ -1,1 +1,1 @@
-python -m unittest discover -p "*emitter_landmark_finder_test.py"
+python -m unittest discover -p "*field_scaler_test.py"

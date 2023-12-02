@@ -9,13 +9,78 @@ class TestFieldScaler(unittest.TestCase):
         return super().setUp()
     
     def test_get_nearest_travelable_lvps_coords (self):
-        # this method needs tested!
+        scaler = FieldScaler(self.get_basic_map(), 640, 640, 1)
 
-        # i pass it a starting position, ending position, and max distance i want to go.
-        # it is returning the wrong direction or soemthign. i think degree/slope calculation is off
+        # should be a clear path anywhere toward the top
+        target_x = 55.0
+        target_y = 60.0
+        clear_x, clear_y = scaler.get_nearest_travelable_lvps_coords (
+            starting_x = 50.0,
+            starting_y = 50.0,
+            target_x = target_x,
+            target_y = target_y,
+            max_dist=500)
         
+        logging.getLogger(__name__).info(f"Nearest to {target_x},{target_y} is {clear_x},{clear_y}")
 
-        pass
+        self.assertEqual(round(clear_x,1), round(target_x,1))
+        self.assertEqual(round(clear_y,1), round(target_y,1))
+
+    def test_get_nearest_travelable_lvps_coords_too_far (self):
+        scaler = FieldScaler(self.get_basic_map(), 640, 640, 1)
+
+        # should be a clear path anywhere toward the top
+        target_x = 75.0
+        target_y = 85.0
+        clear_x, clear_y = scaler.get_nearest_travelable_lvps_coords (
+            starting_x = 50.0,
+            starting_y = 50.0,
+            target_x = target_x,
+            target_y = target_y,
+            max_dist=10)
+        
+        logging.getLogger(__name__).info(f"Nearest to {target_x},{target_y} is {clear_x},{clear_y}")
+
+        self.assertLess(round(clear_x,1), round(target_x,1))
+        self.assertLess(round(clear_y,1), round(target_y,1))
+
+
+    def test_get_nearest_travelable_lvps_coords_backward (self):
+        scaler = FieldScaler(self.get_basic_map(), 640, 640, 1)
+
+        # should be a clear path anywhere toward the top
+        target_x = 50.0
+        target_y = 50.0
+        clear_x, clear_y = scaler.get_nearest_travelable_lvps_coords (
+            starting_x = 75.0,
+            starting_y = 85.0,
+            target_x = target_x,
+            target_y = target_y,
+            max_dist=100)
+        
+        logging.getLogger(__name__).info(f"Nearest to {target_x},{target_y} is {clear_x},{clear_y}")
+
+        self.assertEqual(round(clear_x,1), round(target_x,1))
+        self.assertEqual(round(clear_y,1), round(target_y,1))
+
+    def test_get_nearest_travelable_lvps_coords_backward_too_far (self):
+        scaler = FieldScaler(self.get_basic_map(), 640, 640, 1)
+
+        # should be a clear path anywhere toward the top
+        target_x = 50.0
+        target_y = 50.0
+        clear_x, clear_y = scaler.get_nearest_travelable_lvps_coords (
+            starting_x = 75.0,
+            starting_y = 85.0,
+            target_x = target_x,
+            target_y = target_y,
+            max_dist=10)
+        
+        logging.getLogger(__name__).info(f"Nearest to {target_x},{target_y} is {clear_x},{clear_y}")
+
+        self.assertGreater(round(clear_x,1), round(target_x,1))
+        self.assertGreater(round(clear_y,1), round(target_y,1))
+
 
     def get_basic_map (self):
         return FieldMap( {
@@ -41,7 +106,7 @@ class TestFieldScaler(unittest.TestCase):
                     'altitude':22.75
                 }
             },
-            boundaries={'xmin':-10, 'ymin':-20, 'xmax':10, 'ymax':20},
+            boundaries={'xmin':-10, 'ymin':-20, 'xmax':200, 'ymax':250},
             obstacles={
                 'tree':{'xmin':5, 'ymin':-22, 'xmax':7, 'ymax':-21},
                 'post':{'xmin':-2, 'ymin':-2, 'xmax':2, 'ymax':2}

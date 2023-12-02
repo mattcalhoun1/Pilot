@@ -125,50 +125,50 @@ class FieldScaler:
         traveled = 0
         curr_x = starting_x
         curr_y = starting_y
-        last_x = curr_x
-        last_y = curr_y
         last_ok_x = curr_x
         last_ok_y = curr_y
 
         full_dist = self.__get_distance(curr_x, curr_y, target_x, target_y)
-        #logging.getLogger(__name__).info(f"Want to go {full_dist} toward {target_x},{target_y}")
-
-        # if the distance is near enough, go all the way
-        #if full_dist <= max_dist:
-        #    return target_x, target_y
 
         slope = (target_y - starting_y) / (target_x - starting_x)
-        #logging.getLogger(__name__).info(f"tavbelable slope: {slope}")
-        #logging.getLogger(__name__).info(f"Check1: {traveled < max_dist}")
-        #logging.getLogger(__name__).info(f"Check2: {full_dist > self.__get_distance(starting_x, starting_y, curr_x, curr_y)}")
-        #logging.getLogger(__name__).info(f"Check3: {block_check_method(starting_x, starting_y, curr_x, curr_y) == False}")
+        dist_increment = 0.05 * full_dist
 
+        # convert the slope to degrees
+        cartesian_degrees = math.degrees(math.atan(slope))
+        
         while (traveled < max_dist and full_dist > self.__get_distance(starting_x, starting_y, curr_x, curr_y)):
-            last_x = curr_x
-            last_y = curr_y
+            traveled += dist_increment
+            curr_x, curr_y = self.__get_relative_x_y(
+                x=starting_x,
+                y=starting_y,
+                cartesian_degrees=cartesian_degrees,
+                dist=traveled,
+                is_forward=target_x > starting_x
+            )
 
-            traveled += 1
-            if abs(slope) < 1:
-                curr_x += 1 if target_x > curr_x else -1
-                curr_y += slope if target_x > curr_x else -1 * slope
-            else:
-                curr_y += slope if target_x > curr_x else -1 * slope
-                curr_x += 1/slope if target_x > curr_x else -1 * 1/slope
+            traveled = self.__get_distance(starting_x, starting_y, curr_x, curr_y)
 
-            #logging.getLogger(__name__).info(f"Checking {curr_x},{curr_y}")
             if self.__get_distance(starting_x, starting_y, curr_x, curr_y) <= max_dist:
                 if block_check_method(starting_x, starting_y, curr_x, curr_y) == False:
                     last_ok_x = curr_x
                     last_ok_y = curr_y
 
-        #if traveled >= max_dist or block_check_method(starting_x, starting_y, curr_x, curr_y):
-        #    logging.getLogger(__name__).info(f"returning nearest coords: {last_x},{last_y}")
-        #    return last_x, last_y
-        
-        logging.getLogger(__name__).info(f"Position {curr_x},{curr_y} wants to go up to {max_dist} toward {target_x},{target_y} returning nearest coords: {last_ok_x},{last_ok_y}")
+        logging.getLogger(__name__).info(f"Position {starting_x},{starting_y} wants to go up to {max_dist} toward {target_x},{target_y} returning nearest coords: {last_ok_x},{last_ok_y}")
 
         return last_ok_x, last_ok_y
 
+    def __get_relative_x_y (self, cartesian_degrees, x, y, dist, is_forward):
+        # rotate degrees so zero is east and 180 is west
+        #x = r X cos( θ )
+        #y = r X sin( θ )
+        if is_forward:
+            est_x = x + dist * math.cos(math.radians(cartesian_degrees))
+            est_y = y + dist * math.sin(math.radians(cartesian_degrees))
+        else:
+            est_x = x - dist * math.cos(math.radians(cartesian_degrees))
+            est_y = y - dist * math.sin(math.radians(cartesian_degrees))
+
+        return est_x, est_y
 
     def is_in_bounds (self, sim_x, sim_y):
         lvps_x,lvps_y = self.get_lvps_coords(sim_x, sim_y)

@@ -24,7 +24,7 @@ class FieldRenderer:
     def update_search_state (self, agent_id, target_type, estimated_x, estimated_y):
         if target_type not in self.__search_state:
             self.__search_state[target_type] = []
-        self.__search_state[target_type].append(estimated_x, estimated_y, agent_id)
+        self.__search_state[target_type].append((estimated_x, estimated_y, agent_id))
 
     def save_field_image (self, image_file, add_game_state = False, agent_id = None, other_agents_visible = False):
         fig = self.render_field_image(add_game_state=add_game_state, agent_id=agent_id, other_agents_visible=other_agents_visible)
@@ -58,13 +58,13 @@ class FieldRenderer:
                 for p in self.__agent_state:
                     if p != agent_id:
                         self.__draw_game_state(p, ax, False)
-            self.__draw_found_targets(ax=ax)
 
         # obstacles need to cover all past state data
         self.__draw_obstacles(ax)
 
         # current agent's position is visible over everything
         if add_game_state:
+            self.__draw_found_targets(ax=ax)
             self.__draw_current_postion(agent_id, ax)
 
         fig.patch.set_visible(False)
@@ -197,17 +197,25 @@ class FieldRenderer:
 
     # draws targets that have been found
     def __draw_found_targets (self, ax):
-        for tid in self.__search_state:
-            estimated_x, estimated_y, agent_id = self.__search_state[tid]
-            scaled_x, scaled_y = self.__map_scaler.get_scaled_coords(estimated_x, estimated_y)
-            pos_circle = mpatches.Rectangle(
-                [scaled_x, scaled_y], 
-                color='cyan', 
-                alpha=1.0,
-                fill=True,
-                angle=45.0
-            )
-            ax.add_patch(pos_circle)
+        target_size = 0.01
+
+        target_width = self.__map_scaler.get_scaled_width() * target_size
+        target_height = self.__map_scaler.get_scaled_height() * target_size
+
+        for target_type in self.__search_state:
+            #logging.getLogger(__name__).info(f"=============>>>>> {target_type}")
+            for (estimated_x, estimated_y, agent_id) in self.__search_state[target_type]:
+                #logging.getLogger(__name__).info(f"rendering target at {estimated_x,estimated_y}")
+                scaled_x, scaled_y = self.__map_scaler.get_scaled_coords(estimated_x, estimated_y)
+                pos_circle = mpatches.Rectangle(
+                    [scaled_x - target_width, scaled_y - target_height], 
+                    target_width, target_height,
+                    color='purple', 
+                    alpha=1.0,
+                    fill=True,
+                    angle=45.0
+                )
+                ax.add_patch(pos_circle)
 
     def __draw_boundaries (self, ax):
         bx_min, by_min, bx_max, by_max = self.__field_map.get_boundaries()
