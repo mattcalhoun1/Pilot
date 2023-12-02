@@ -144,6 +144,15 @@ class SearchAction(ActionBase):
 
         logging.getLogger(__name__).info(f"Finding object position using vehicle heading: {heading}, x: {x}, y:{y}, cartesian coord angle: {cartesian_angle_degrees}")
 
-        est_x = x + obj_dist * math.cos(math.radians(cartesian_angle_degrees))
-        est_y = y + obj_dist * math.sin(math.radians(cartesian_angle_degrees))
+        # if we are looking to the right, we add to x
+        map_obj_heading = heading + obj_degrees
+        if map_obj_heading < -180:
+            map_obj_heading = 180 - abs(map_obj_heading + 180)
+        
+        if map_obj_heading > 0:
+            est_x = x + obj_dist * math.cos(math.radians(cartesian_angle_degrees))
+            est_y = y + obj_dist * math.sin(math.radians(cartesian_angle_degrees))
+        else:
+            est_x = x - obj_dist * math.cos(math.radians(cartesian_angle_degrees))
+            est_y = y - obj_dist * math.sin(math.radians(cartesian_angle_degrees))
         return est_x, est_y
