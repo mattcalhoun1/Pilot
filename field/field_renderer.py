@@ -3,6 +3,7 @@ import matplotlib.patches as mpatches
 import logging
 from field.field_map import FieldMap
 from field.field_scaler import FieldScaler
+from trig.trig import BasicTrigCalc
 
 # renders an image of the map
 class FieldRenderer:
@@ -11,6 +12,7 @@ class FieldRenderer:
         self.__map_scaler = map_scaler
         self.__agent_state = {}
         self.__search_state = {}
+        self.__trig_calc = BasicTrigCalc()
 
     def get_map_scaler (self):
         return self.__map_scaler
@@ -113,13 +115,7 @@ class FieldRenderer:
                     scaled_x, scaled_y = self.__map_scaler.get_scaled_coords(x,y)
                     scaled_dist = self.__map_scaler.scale_lvps_distance_to_sim(dist)
 
-                    mp_heading = 90 - heading # this gets our heading in terms of matplotlib
-
-                    # now we want to face the reverse (what we want to be facing the empty part of the wedge)
-                    if mp_heading > 180:
-                        mp_heading -= 180
-                    else:
-                        mp_heading += 180
+                    mp_heading = self.__trig_calc.convert_heading_to_cartesian(heading)
 
                     wedge_angle_start = min_angle + mp_heading
                     wedge_angle_end = max_angle + mp_heading

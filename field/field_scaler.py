@@ -1,6 +1,7 @@
 import logging
 import random
 import math
+from trig.trig import BasicTrigCalc
 
 # translates between an LVPS field and a scaled field
 # this helps to visualize or simulate a field
@@ -20,6 +21,8 @@ class FieldScaler:
 
         self.__shift_x = (self.__scaled_width / 2) - scaled_down_center_x
         self.__shift_y = (self.__scaled_height / 2) - scaled_down_center_y
+
+        self.__trig_calc = BasicTrigCalc()
 
     def get_scaled_height (self):
         return self.__scaled_height
@@ -138,13 +141,20 @@ class FieldScaler:
         
         while (traveled < max_dist and full_dist > self.__get_distance(starting_x, starting_y, curr_x, curr_y)):
             traveled += dist_increment
-            curr_x, curr_y = self.__get_relative_x_y(
-                x=starting_x,
-                y=starting_y,
-                cartesian_degrees=cartesian_degrees,
-                dist=traveled,
-                is_forward=target_x > starting_x
-            )
+            curr_x, curr_y = self.__trig_calc.get_coords_for_angle_and_distance (
+                heading=cartesian_degrees,
+                x = starting_x,
+                y = starting_y,
+                distance = traveled,
+                is_forward = target_x > starting_x)
+
+            #curr_x, curr_y = self.__get_relative_x_y(
+            #    x=starting_x,
+            #    y=starting_y,
+            #    cartesian_degrees=cartesian_degrees,
+            #    dist=traveled,
+            #    is_forward=target_x > starting_x
+            #)
 
             traveled = self.__get_distance(starting_x, starting_y, curr_x, curr_y)
 

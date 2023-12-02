@@ -3,7 +3,7 @@ import math
 import logging
 
 class FieldMap:
-    def __init__(self, landmarks, shape='rectangle', boundaries = None, obstacles = None, search = None, near_boundaries = None, name = None):
+    def __init__(self, landmarks, shape='rectangle', boundaries = None, obstacles = None, search = None, near_boundaries = None, name = None, dead_spots = None):
         if shape != 'rectangle':
             raise Exception("Only rectangle supported")
         
@@ -14,6 +14,7 @@ class FieldMap:
         self.__search = search
         self.__near_boundaries = near_boundaries
         self.__name = name
+        self.__dead_spots = dead_spots if dead_spots is not None else {}
         
         if self.__boundaries is None:
             logging.getLogger(__name__).warning("No boundaries given on map, all points will be considered in bounds")
@@ -69,6 +70,36 @@ class FieldMap:
 
         # check the near-bounds
         return x >= self.__near_boundaries['xmin'] and x <= self.__near_boundaries['xmax'] and y >= self.__near_boundaries['ymin'] and y <= self.__near_boundaries['ymax']
+    
+    def add_dead_spot (self, name, x_min, y_min, x_max, y_max, heading_start = None, heading_end = None):
+        self.__dead_spots[name] = {
+            'xmin':x_min,
+            'ymin':y_min,
+            'xmax':x_max,
+            'ymax':y_max
+        }
+
+        if heading_start is not None:
+            self.__dead_spots[name]['heading_start'] = heading_start
+
+        if heading_end is not None:
+            self.__dead_spots[name]['heading_end'] = heading_end
+
+    def is_in_dead_spot (self, x, y, heading):
+        if self.__dead_spots is None:
+            return False, None
+
+        for d in self.__dead_spots:
+            d_bounds = self.__dead_spots[d]
+            if x >= d_bounds['xmin'] and x <= d_bounds['xmax'] and y >= d_bounds['ymin'] and y <= d_bounds['ymax']:
+                if 'heading_start' in d_bounds and 'heading_end' in d_bounds:
+                    if heading >= d_bounds['heading_start'] and heading <= d_bounds['heading_end']:
+                        return True, d
+                    else:
+                        return False, None
+                return True, d
+        
+        return False, None
 
     # tells whether a given point is blocked by an obstacle, as well as the obstacle id
     def is_blocked (self, x, y):

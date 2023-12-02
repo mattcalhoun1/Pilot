@@ -2,6 +2,7 @@ from pilot.pilot_navigation import PilotNavigation
 from pilot.pilot_logger import PilotLogger
 from camera.camera_info import CameraInfo
 from pilot.actions.action_base import ActionBase
+from trig.trig import BasicTrigCalc
 import logging
 import time
 import math
@@ -14,6 +15,7 @@ class SearchAction(ActionBase):
         self.__lidar_max_age = self.get_pilot_config()['Lidar']['MaxAge']
         self.__lidar_drift_tolerance = self.get_pilot_config()['Lidar']['MaxDriftDegrees']
         self.__lidar_visual_variance_pct = self.get_pilot_config()['Lidar']['MaxVisualDistVariancePct']
+        self.__trig_calc = BasicTrigCalc()
 
         self.__camera_horz_fov = [
             CameraInfo.get_fov_horizontal(self.get_pilot_config()['Cameras']['Left']['Config']),
@@ -63,7 +65,13 @@ class SearchAction(ActionBase):
 
                         logging.getLogger(__name__).info(f"Angles: {angles[obj_id][0]}")
 
-                        est_x, est_y = self.get_object_x_y(heading, x, y, obj_dist=obj_est_dist, obj_degrees = obj_rel_deg)
+                        est_x, est_y = self.__trig_calc.get_coords_for_zeronorth_angle_and_distance (
+                            heading=heading + obj_rel_deg,
+                            x = x,
+                            y = y,
+                            distance = obj_est_dist,
+                            is_forward = True)
+
                         logging.getLogger(__name__).info(f"Object estimated position: {(est_x, est_y)}")
 
                         obj_est_dist_mm = self.__in_to_mm(obj_est_dist)
@@ -134,25 +142,25 @@ class SearchAction(ActionBase):
         
         return found_angle, found_measurement
 
-    def get_object_x_y (self, heading, x, y, obj_dist, obj_degrees):
-        # rotate degrees so zero is east and 180 is west
-        #x = r X cos( θ )
-        #y = r X sin( θ )
-        cartesian_angle_degrees = 180 - (obj_degrees - heading)
-        if cartesian_angle_degrees < 0:
-            cartesian_angle_degrees += 360
-
-        logging.getLogger(__name__).info(f"Finding object position using vehicle heading: {heading}, x: {x}, y:{y}, cartesian coord angle: {cartesian_angle_degrees}")
-
-        # if we are looking to the right, we add to x
-        map_obj_heading = heading + obj_degrees
-        if map_obj_heading < -180:
-            map_obj_heading = 180 - abs(map_obj_heading + 180)
-        
-        if map_obj_heading > 0:
-            est_x = x + obj_dist * math.cos(math.radians(cartesian_angle_degrees))
-            est_y = y + obj_dist * math.sin(math.radians(cartesian_angle_degrees))
-        else:
-            est_x = x - obj_dist * math.cos(math.radians(cartesian_angle_degrees))
-            est_y = y - obj_dist * math.sin(math.radians(cartesian_angle_degrees))
-        return est_x, est_y
+    #def get_object_x_y (self, heading, x, y, obj_dist, obj_degrees):
+    #    # rotate degrees so zero is east and 180 is west
+    #    #x = r X cos( θ )
+    #    #y = r X sin( θ )
+    #    cartesian_angle_degrees = 180 - (obj_degrees - heading)
+    #    if cartesian_angle_degrees < 0:
+    #        cartesian_angle_degrees += 360
+    #
+    #    logging.getLogger(__name__).info(f"Finding object position using vehicle heading: {heading}, x: {x}, y:{y}, cartesian coord angle: {cartesian_angle_degrees}")
+    #
+    #    # if we are looking to the right, we add to x
+    #    map_obj_heading = heading + obj_degrees
+    #    if map_obj_heading < -180:
+    #        map_obj_heading = 180 - abs(map_obj_heading + 180)
+    #    
+    #    if map_obj_heading > 0:
+    #        est_x = x + obj_dist * math.cos(math.radians(cartesian_angle_degrees))
+    #        est_y = y + obj_dist * math.sin(math.radians(cartesian_angle_degrees))
+    #    else:
+    #        est_x = x - obj_dist * math.cos(math.radians(cartesian_angle_degrees))
+    #        est_y = y - obj_dist * math.sin(math.radians(cartesian_angle_degrees))
+    #    return est_x, est_y

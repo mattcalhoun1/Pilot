@@ -51,3 +51,58 @@ class BasicTrigCalc:
             logging.getLogger(__name__).error(f"calc_far_angle error: {e}, far_side: {far_side}, base_side: {base_side}, top_side: {top_side}, part_one {part_one}, part_two {part_two}")
 
         return None
+    
+    # for a 0-forward heading like lvps, returns cartesian equivalent
+    def convert_heading_to_cartesian (self, lvps_heading):
+        bounded_lvps_heading = self.adjust_unbounded_zeronorth_heading(lvps_heading)
+
+        cart_heading = 0
+        if abs(bounded_lvps_heading) <= 90:
+            cart_heading = 90 - bounded_lvps_heading
+        elif bounded_lvps_heading < 0:
+            cart_heading = 90 - bounded_lvps_heading
+        elif bounded_lvps_heading > 0:
+            cart_heading = 360 - bounded_lvps_heading + 90
+
+        return cart_heading   
+
+    # this assumes zero-north heading (-90 west, 90 east). setting forward to false reverses the calculation, as you might expect
+    def get_coords_for_zeronorth_angle_and_distance (self, heading, x, y, distance, is_forward = True):
+        cart_angle = self.convert_heading_to_cartesian(heading)
+        return self.get_coords_for_angle_and_distance(
+            heading=cart_angle,
+            x=x,
+            y=y,
+            distance=distance,
+            is_forward=is_forward
+        )
+
+    # this assumes cartesian heading. setting forward to false reverses the calculation, as you might expect
+    def get_coords_for_angle_and_distance (self, heading, x, y, distance, is_forward = True):
+
+        # multiplier to reverse direction if needed
+        forward_multiplier = 1 if is_forward else -1
+        x_position_multiplier = 1
+        y_position_multiplier = 1
+
+        # if we the heading is in a backward direction (x decreasing or y going straight down), we need to reverse the direction
+        if heading > 90 and heading <= 270:
+            x_position_multiplier = -1
+        if heading > 180 and heading <= 360:
+            y_position_multiplier = -1
+
+        est_x = x + forward_multiplier * x_position_multiplier * distance * abs(math.cos(math.radians(heading)))
+        est_y = y + forward_multiplier * y_position_multiplier * distance * abs(math.sin(math.radians(heading)))
+
+        return est_x, est_y
+
+
+    def adjust_unbounded_zeronorth_heading (self, heading):
+        adjusted = heading
+
+        if adjusted > 180.0:
+            adjusted = -1 * (360 - adjusted)
+        elif adjusted < -180.0:
+            adjusted = 360 - abs(adjusted)
+
+        return adjusted
