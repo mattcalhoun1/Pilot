@@ -1,6 +1,7 @@
 import logging
 import random
 import math
+import statistics
 from trig.trig import BasicTrigCalc
 
 # translates between an LVPS field and a scaled field
@@ -11,16 +12,31 @@ class FieldScaler:
         self.__scaled_height = scaled_height
         self.__scaled_width = scaled_width
         self.__map_scaler = scale_factor
+
         self.__invert_y_axis = invert_y_axis
         self.__invert_x_axis = invert_x_axis
 
         bound_x_min, bound_y_min, bound_x_max, bound_y_max = field_map.get_boundaries()
+        self.__x_scaler = scale_factor * (scaled_height / (bound_x_max - bound_x_min))
+        self.__y_scaler = scale_factor * (scaled_width / (bound_y_max - bound_y_min))
+        # this isn't very good, and only works accurately for square shape.
+        # the dist scaling really needs to be done by calculating distance differently
+        self.__dist_scaler = statistics.mean([self.__x_scaler, self.__y_scaler])
+
         bound_center_x = bound_x_min + ((bound_x_max - bound_x_min) / 2)
         bound_center_y = bound_y_min + ((bound_y_max - bound_y_min) / 2)
         scaled_down_center_x, scaled_down_center_y = self.__scale_coords_down(bound_center_x, bound_center_y)
 
-        self.__shift_x = (self.__scaled_width / 2) - scaled_down_center_x
-        self.__shift_y = (self.__scaled_height / 2) - scaled_down_center_y
+
+        scaled_field_center_x = self.__scaled_width / 2
+        scaled_field_center_y = self.__scaled_height / 2
+
+        self.__shift_x = scaled_field_center_x - scaled_down_center_x
+        self.__shift_y = scaled_field_center_y - scaled_down_center_y
+
+        #logging.getLogger(__name__).info(f"LVPS Map center: ({bound_center_x},{bound_center_y}), scaled to ({scaled_down_center_x},{scaled_down_center_y})")
+        #logging.getLogger(__name__).info(f"Scaled field center: ({scaled_field_center_x},{scaled_field_center_y})")
+        #logging.getLogger(__name__).info(f"After scaling, x coords will be shifted: {self.__shift_x}, y coords will be shifted {self.__shift_y}")
 
         self.__trig_calc = BasicTrigCalc()
 
@@ -34,10 +50,10 @@ class FieldScaler:
         return self.__field_map
     
     def scale_lvps_distance_to_sim (self, dist):
-        return dist * self.__map_scaler
+        return dist * self.__dist_scaler
     
     def scale_sim_to_lvps_distance (self, dist):
-        return dist / self.__map_scaler
+        return dist / self.__dist_scaler
 
     def get_lvps_coords (self, sim_x, sim_y):
         if self.__invert_x_axis:
@@ -197,19 +213,19 @@ class FieldScaler:
         return (x - self.__shift_x, y - self.__shift_y)
 
     def __scale_coords_up (self, x, y):
-        scaled_x = x / self.__map_scaler
-        scaled_y = y / self.__map_scaler
+        scaled_x = x / self.__x_scaler
+        scaled_y = y / self.__y_scaler
 
-        scaled_x += (1 / self.__map_scaler) / 2
-        scaled_y += (1 / self.__map_scaler) / 2
+        scaled_x += (1 / self.__x_scaler) / 2
+        scaled_y += (1 / self.__y_scaler) / 2
 
         #logging.getLogger(__name__).info(f"Simulation coord {(x,y)} scales up to LVPS {(scaled_x,scaled_y)}")
 
         return scaled_x, scaled_y
 
     def __scale_coords_down (self, x, y):
-        scaled_x = x * self.__map_scaler
-        scaled_y = y * self.__map_scaler
+        scaled_x = x * self.__x_scaler
+        scaled_y = y * self.__y_scaler
 
         # round or floor?
         scaled_x = round(scaled_x)

@@ -8,6 +8,19 @@ class TestFieldScaler(unittest.TestCase):
         logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
         return super().setUp()
     
+    def test_scale_down (self):
+        scaler = FieldScaler(self.get_basic_map(), 100, 100, 1)
+
+        # the min x,y should be 0,0
+        scaled_x, scaled_y = scaler.get_scaled_coords(lvps_x=-10, lvps_y=-20)
+        self.assertEqual(round(scaled_x), 0)
+        self.assertEqual(round(scaled_y), 0)
+
+        # the max x,y should be 100,100
+        scaled_x, scaled_y = scaler.get_scaled_coords(lvps_x=200, lvps_y=250)
+        self.assertEqual(round(scaled_x), 100)
+        self.assertEqual(round(scaled_y), 100)
+
     def test_get_nearest_travelable_lvps_coords (self):
         scaler = FieldScaler(self.get_basic_map(), 640, 640, 1)
 
