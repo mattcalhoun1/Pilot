@@ -4,6 +4,7 @@ import logging
 from field.field_map import FieldMap
 from field.field_scaler import FieldScaler
 from trig.trig import BasicTrigCalc
+import numpy as np
 
 # renders an image of the map
 class FieldRenderer:
@@ -28,31 +29,40 @@ class FieldRenderer:
             self.__search_state[target_type] = []
         self.__search_state[target_type].append((estimated_x, estimated_y, agent_id))
 
-    def save_field_image (self, image_file, add_game_state = False, agent_id = None, other_agents_visible = False):
-        fig = self.render_field_image(add_game_state=add_game_state, agent_id=agent_id, other_agents_visible=other_agents_visible)
+    def render_field_image_to_array (self, add_game_state = False, agent_id = None, other_agents_visible = False, width_inches=4, height_inches=4, dpi=100):
+        fig = self.render_field_image(
+            add_game_state=add_game_state, 
+            agent_id=agent_id, 
+            other_agents_visible=other_agents_visible, 
+            width_inches=width_inches, 
+            height_inches=height_inches,
+            dpi=dpi)
+        fig.canvas.draw()  # Draw the canvas, cache the renderer
+
+        image_flat = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8')  # (H * W * 3,)
+        # NOTE: reversed converts (W, H) from get_width_height to (H, W)
+        return image_flat.reshape(*reversed(fig.canvas.get_width_height()), 3)  # (H, W, 3)
+
+    def save_field_image (self, image_file, add_game_state = False, agent_id = None, other_agents_visible = False, width_inches=4, height_inches=4, dpi=100):
+        fig = self.render_field_image(
+            add_game_state=add_game_state, 
+            agent_id=agent_id, 
+            other_agents_visible=other_agents_visible, 
+            width_inches=width_inches, 
+            height_inches=height_inches, 
+            dpi=dpi)
 
         fig.canvas.print_png(image_file)
         plt.close()
-        #with open(image_file, 'w') as outfile:
-        #    fig.canvas.print_png(outfile)
 
-        #fig.savefig(image_file, dpi=dpi, transparent=True)
-
-    def render_field_image(self, add_game_state = False, agent_id = None, other_agents_visible = False, width_inches=8, height_inches=8):
+    def render_field_image(self, add_game_state = False, agent_id = None, other_agents_visible = False, width_inches=4, height_inches=4, dpi=100):
         fig, ax = plt.subplots()
         ax.set_xlim(self.__map_scaler.get_scaled_width())
         ax.set_ylim(self.__map_scaler.get_scaled_height())
 
-        #ax.xaxis.set_ticks([])
-        #ax.yaxis.set_ticks([])
-
         fig.set_size_inches(w=width_inches, h=height_inches)
-        fig.set_dpi(200)
+        fig.set_dpi(dpi)
         self.__draw_boundaries(ax)
-
-        #ax.set_facecolor('black')
-        #ax.axis(False)
-        #fig.tight_layout()
 
         if add_game_state:
             self.__draw_game_state(agent_id, ax, True)

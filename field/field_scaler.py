@@ -171,7 +171,7 @@ class FieldScaler:
                     last_ok_x = curr_x
                     last_ok_y = curr_y
 
-        logging.getLogger(__name__).info(f"Position {starting_x},{starting_y} wants to go up to {max_dist} toward {target_x},{target_y} returning nearest coords: {last_ok_x},{last_ok_y}")
+        #logging.getLogger(__name__).info(f"Position {starting_x},{starting_y} wants to go up to {max_dist} toward {target_x},{target_y} returning nearest coords: {last_ok_x},{last_ok_y}")
 
         return last_ok_x, last_ok_y
 

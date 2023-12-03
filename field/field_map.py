@@ -54,12 +54,28 @@ class FieldMap:
         return abs(self.__boundaries['ymax'] - self.__boundaries['ymin'])
 
     # tells whether a given point is in bounds
-    def is_in_bounds (self, x, y):
+    def is_in_bounds (self, x, y, path_width = 0):
         if self.__boundaries is None:
             return True
 
-        return x >= self.__boundaries['xmin'] and x <= self.__boundaries['xmax'] and y >= self.__boundaries['ymin'] and y <= self.__boundaries['ymax']
+        in_bounds = x >= self.__boundaries['xmin'] and x <= self.__boundaries['xmax'] and y >= self.__boundaries['ymin'] and y <= self.__boundaries['ymax']
     
+        if in_bounds and path_width > 0:
+            # need to check all 4 corners of the vehicle
+            for corner_x, corner_y in self.__get_corners(x,y, path_width):
+                if in_bounds:
+                    in_bounds = corner_x >= self.__boundaries['xmin'] and corner_x <= self.__boundaries['xmax'] and corner_y >= self.__boundaries['ymin'] and corner_y <= self.__boundaries['ymax']
+
+        return in_bounds
+
+    def __get_corners (self, x, y, size):
+        return [
+            (x - size *.5, y - size * .5),
+            (x - size *.5, y + size * .5),
+            (x + size *.5, y - size * .5),
+            (x + size *.5, y + size * .5),
+        ]
+
     def get_obstacles (self):
         return self.__obstacles
 
@@ -102,7 +118,7 @@ class FieldMap:
         return False, None
 
     # tells whether a given point is blocked by an obstacle, as well as the obstacle id
-    def is_blocked (self, x, y):
+    def is_blocked (self, x, y, path_width = 0):
         if self.__obstacles is None:
             return False, None
 
@@ -110,6 +126,12 @@ class FieldMap:
             o_bounds = self.__obstacles[o]
             if x >= o_bounds['xmin'] and x <= o_bounds['xmax'] and y >= o_bounds['ymin'] and y <= o_bounds['ymax']:
                 return True, o
+            
+            if path_width > 0:
+                # need to check all 4 corners of the vehicle
+                for corner_x, corner_y in self.__get_corners(x,y, path_width):
+                    if corner_x >= o_bounds['xmin'] and corner_x <= o_bounds['xmax'] and corner_y >= o_bounds['ymin'] and corner_y <= o_bounds['ymax']:
+                        return True, o
         
         return False, None
 
