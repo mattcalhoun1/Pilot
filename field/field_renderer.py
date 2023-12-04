@@ -5,6 +5,7 @@ from field.field_map import FieldMap
 from field.field_scaler import FieldScaler
 from trig.trig import BasicTrigCalc
 import numpy as np
+import gc
 
 # renders an image of the map
 class FieldRenderer:
@@ -40,6 +41,9 @@ class FieldRenderer:
         fig.canvas.draw()  # Draw the canvas, cache the renderer
 
         image_flat = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8')  # (H * W * 3,)
+        plt.close()
+        gc.collect()        
+
         # NOTE: reversed converts (W, H) from get_width_height to (H, W)
         return image_flat.reshape(*reversed(fig.canvas.get_width_height()), 3)  # (H, W, 3)
 
@@ -54,6 +58,7 @@ class FieldRenderer:
 
         fig.canvas.print_png(image_file)
         plt.close()
+        gc.collect()        
 
     def render_field_image(self, add_game_state = False, agent_id = None, other_agents_visible = False, width_inches=4, height_inches=4, dpi=100):
         fig, ax = plt.subplots()
