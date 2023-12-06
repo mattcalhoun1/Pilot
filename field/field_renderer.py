@@ -104,6 +104,7 @@ class FieldRenderer:
         stale_history = 10 # how many moves back are considered 'stale'
 
         alpha_multiplier = 1
+        fill = True
         colors = {
             'position':'green',
             'look':'yellow',
@@ -111,6 +112,7 @@ class FieldRenderer:
         }
         if is_current_agent == False:
             alpha_multiplier = 0.5
+            fill = False
             colors = {
                 'position':'blue',
                 'look':'lightblue',
@@ -170,7 +172,7 @@ class FieldRenderer:
                         linewidth=0,
                         color=colors['position'], 
                         alpha=self.__get_alpha_based_on_age(position_age, stale_history, alpha_min=0, alpha_max=1.0)*alpha_multiplier,
-                        fill=True
+                        fill=fill
                     )
                     ax.add_patch(pos_circle)
 
