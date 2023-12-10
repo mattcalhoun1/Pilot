@@ -10,13 +10,14 @@ import gc
 
 # renders an image of the map
 class FieldRenderer:
-    def __init__(self, field_map : FieldMap, map_scaler : FieldScaler):
+    def __init__(self, field_map : FieldMap, map_scaler : FieldScaler, grayscale = False):
         self.__field_map = field_map
         self.__map_scaler = map_scaler
         self.__agent_state = {}
         self.__search_state = {}
         self.__trig_calc = BasicTrigCalc()
         self.__mp_lock = threading.Lock() # the way I'm using matplotlib seems to not be threadsafe
+        self.__grayscale = grayscale
 
     def get_map_scaler (self):
         return self.__map_scaler
@@ -49,6 +50,9 @@ class FieldRenderer:
 
             # NOTE: reversed converts (W, H) from get_width_height to (H, W)
             np_rendered = image_flat.reshape(*reversed(fig.canvas.get_width_height()), 3)  # (H, W, 3)
+
+            if self.__grayscale:
+                np_rendered = self.__rgb2gray(np_rendered)
         except Exception as e:
             logging.getLogger(__name__).error(f"Error rendering field to array: {e}")
 
@@ -77,6 +81,10 @@ class FieldRenderer:
         gc.collect()
         self.__mp_lock.release()
 
+    #function using np.dot()
+    def __rgb2gray(self, rgb):
+        return np.round(np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])).astype(np.uint8)
+    
     def __render_field_image(self, add_game_state = False, agent_id = None, other_agents_visible = False, width_inches=4, height_inches=4, dpi=100):
         fig, ax = plt.subplots()
         ax.set_xlim(self.__map_scaler.get_scaled_width())
