@@ -46,13 +46,16 @@ class FieldRenderer:
                 dpi=dpi)
             fig.canvas.draw()  # Draw the canvas, cache the renderer
 
-            image_flat = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8')  # (H * W * 3,)
+            img_rgba = np.array(fig.canvas.buffer_rgba())
+            img_rgb = self.__extract_rgb(img_rgba)
 
-            # NOTE: reversed converts (W, H) from get_width_height to (H, W)
-            np_rendered = image_flat.reshape(*reversed(fig.canvas.get_width_height()), 3)  # (H, W, 3)
-
+            np_rendered = img_rgb
             if self.__grayscale:
                 np_rendered = self.__rgb2gray(np_rendered)
+                new_shape_w, new_shape_h = np_rendered.shape
+
+                # add single channel for holding the grayscale value, as that's what stable baselines 3 likes
+                np_rendered = np_rendered.reshape(new_shape_w, new_shape_h, 1)
         except Exception as e:
             logging.getLogger(__name__).error(f"Error rendering field to array: {e}")
 
@@ -84,6 +87,27 @@ class FieldRenderer:
     #function using np.dot()
     def __rgb2gray(self, rgb):
         return np.round(np.dot(rgb[...,:3], [0.2989, 0.5870, 0.1140])).astype(np.uint8)
+    
+    def __extract_rgb (self, rgba, background=(255,255,255)):
+        row, col, ch = rgba.shape
+
+        if ch == 3:
+            return rgba
+
+        assert ch == 4, 'RGBA image has 4 channels.'
+
+        rgb = np.zeros( (row, col, 3), dtype='float32' )
+        r, g, b, a = rgba[:,:,0], rgba[:,:,1], rgba[:,:,2], rgba[:,:,3]
+
+        a = np.asarray( a, dtype='float32' ) / 255.0
+
+        R, G, B = background
+
+        rgb[:,:,0] = r * a + (1.0 - a) * R
+        rgb[:,:,1] = g * a + (1.0 - a) * G
+        rgb[:,:,2] = b * a + (1.0 - a) * B
+
+        return np.asarray( rgb, dtype='uint8' )    
     
     def __render_field_image(self, add_game_state = False, agent_id = None, other_agents_visible = False, width_inches=4, height_inches=4, dpi=100):
         fig, ax = plt.subplots()
